@@ -34,25 +34,25 @@ export default function BookingPage() {
     // Airbnb Cleaning Services
     "airbnb-1bed": {
       name: "Airbnb 1 Bedroom",
-      price: 140,
+      price: 110,
       cleaners: "1 Cleaner",
       category: "Airbnb Cleaning",
     },
     "airbnb-2bed": {
       name: "Airbnb 2 Bedrooms",
-      price: 180,
+      price: 140,
       cleaners: "1 Cleaner",
       category: "Airbnb Cleaning",
     },
     "airbnb-3bed": {
       name: "Airbnb 3 Bedrooms",
-      price: 270,
+      price: 200,
       cleaners: "2 Cleaners",
       category: "Airbnb Cleaning",
     },
     "airbnb-4bed": {
       name: "Airbnb 4+ Bedrooms",
-      price: 320,
+      price: 240,
       cleaners: "2 Cleaners",
       category: "Airbnb Cleaning",
     },
