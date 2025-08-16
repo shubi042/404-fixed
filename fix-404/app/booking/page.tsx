@@ -176,20 +176,21 @@ export default function BookingPage() {
         }),
       })
 
-      const { clientSecret } = await response.json()
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to start checkout")
+      }
 
       const stripe = await stripePromise
       if (!stripe) throw new Error("Stripe failed to load")
 
-      const { error } = await stripe.redirectToCheckout({ sessionId: clientSecret })
-
+      const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId })
       if (error) {
-        console.error("Stripe error:", error)
-        alert("Payment failed. Please try again.")
+        throw error
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment error:", error)
-      alert("Payment failed. Please try again.")
+      alert(error?.message || "Payment failed. Please try again.")
     } finally {
       setIsProcessing(false)
     }
