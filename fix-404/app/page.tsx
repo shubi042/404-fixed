@@ -18,8 +18,7 @@ export default function HomePage() {
               <span className="text-white/90">Made Simple</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto">
-              Experience spotless results with TidyMate's professional cleaning services. Book by the hour or choose our
-              comprehensive packages.
+                          Experience spotless results with TidyMate's professional cleaning services. Choose our comprehensive flat-rate packages.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" variant="secondary" className="text-lg px-8 py-3">
@@ -56,7 +55,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Flexible Scheduling</h3>
                 <p className="text-muted-foreground">
-                  Book hourly services or complete packages that fit your schedule and budget.
+                  Choose complete packages that fit your schedule and budget.
                 </p>
               </CardContent>
             </Card>
