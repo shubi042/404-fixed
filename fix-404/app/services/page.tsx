@@ -143,29 +143,6 @@ export default function ServicesPage() {
               </CardContent>
             </Card>
 
-            {/* Recurring Services */}
-            <Card className="h-full">
-              <CardHeader>
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                  <span className="text-3xl">🔄</span>
-                </div>
-                <CardTitle className="text-2xl">Recurring Services</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-6">
-                  Regular cleaning schedules to maintain your space consistently clean and organized.
-                </p>
-                <ul className="space-y-2 text-sm text-muted-foreground mb-6">
-                  <li>• Weekly, bi-weekly, or monthly</li>
-                  <li>• Customized cleaning plans</li>
-                  <li>• Consistent team assignment</li>
-                  <li>• Discounted rates</li>
-                </ul>
-                <Button asChild className="w-full">
-                  <Link href="/booking">Book Now</Link>
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </section>

@@ -115,7 +115,6 @@ export default function BookingPage() {
     { id: "garage", name: "Garage Cleaning", price: 50 },
     { id: "basement", name: "Basement Cleaning", price: 35 },
     { id: "carpet-cleaning", name: "Carpet Deep Clean", price: 60 },
-    { id: "pressure-washing", name: "Exterior Pressure Washing", price: 80 },
   ]
 
   const calculateTotal = () => {

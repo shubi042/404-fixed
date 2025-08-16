@@ -156,9 +156,6 @@ export default function ContactPage() {
                     <span className="font-medium">8:00 AM - 6:00 PM</span>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground mt-4">
-                  Emergency cleaning services available 24/7 with advance notice.
-                </p>
               </CardContent>
             </Card>
 
