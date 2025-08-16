@@ -103,10 +103,7 @@ export default function BookingSuccessPage() {
 
             <div className="text-center space-y-4">
               <p className="text-sm text-muted-foreground">
-                Questions about your booking? Contact us at{" "}
-                <a href="mailto:services@tidymate.ca" className="text-primary hover:underline font-medium">
-                  services@tidymate.ca
-                </a>
+                A confirmation has been sent to your email. Our team also receives a notification to schedule your service.
               </p>
 
               <div className="flex gap-4 justify-center">
