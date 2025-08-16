@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { loadStripe } from "@stripe/stripe-js"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Slider } from "@/components/ui/slider"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -27,6 +29,9 @@ export default function BookingPage() {
     instructions: "",
   })
   const [isProcessing, setIsProcessing] = useState(false)
+  const [pricingMode, setPricingMode] = useState<"flat" | "hourly">("flat")
+  const [hourlyHours, setHourlyHours] = useState(2)
+  const HOURLY_RATE = 35
 
   const servicePricing = {
     // Airbnb Cleaning Services
@@ -118,11 +123,17 @@ export default function BookingPage() {
   ]
 
   const calculateTotal = () => {
-    const basePrice = servicePricing[selectedService as keyof typeof servicePricing]?.price || 0
     const addonTotal = selectedAddons.reduce((sum, addonId) => {
       const addon = addons.find((a) => a.id === addonId)
       return sum + (addon?.price || 0)
     }, 0)
+
+    if (pricingMode === "hourly") {
+      const hours = Math.max(2, hourlyHours)
+      return HOURLY_RATE * hours + addonTotal
+    }
+
+    const basePrice = servicePricing[selectedService as keyof typeof servicePricing]?.price || 0
     return basePrice + addonTotal
   }
 
@@ -140,7 +151,7 @@ export default function BookingPage() {
 
   const handlePayment = async () => {
     if (
-      !selectedService ||
+      (pricingMode === "flat" && !selectedService) ||
       !formData.firstName ||
       !formData.lastName ||
       !formData.email ||
@@ -156,16 +167,20 @@ export default function BookingPage() {
     setIsProcessing(true)
 
     try {
-      // Create payment intent on the server
+      const chosenService =
+        pricingMode === "flat"
+          ? servicePricing[selectedService as keyof typeof servicePricing]
+          : { name: `Hourly Cleaning (${Math.max(2, hourlyHours)}h @ $${HOURLY_RATE}/hr)`, price: HOURLY_RATE * Math.max(2, hourlyHours), cleaners: "N/A", category: "Hourly" }
+
       const response = await fetch("/api/create-payment-intent", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: calculateTotal() * 100, // Convert to cents
+          amount: calculateTotal() * 100,
           currency: "cad",
-          service: servicePricing[selectedService as keyof typeof servicePricing],
+          service: chosenService,
           addons: selectedAddons.map((id) => addons.find((a) => a.id === id)).filter(Boolean),
           customerInfo: formData,
         }),
@@ -173,13 +188,10 @@ export default function BookingPage() {
 
       const { clientSecret } = await response.json()
 
-      // Redirect to Stripe Checkout
       const stripe = await stripePromise
       if (!stripe) throw new Error("Stripe failed to load")
 
-      const { error } = await stripe.redirectToCheckout({
-        sessionId: clientSecret,
-      })
+      const { error } = await stripe.redirectToCheckout({ sessionId: clientSecret })
 
       if (error) {
         console.error("Stripe error:", error)
@@ -225,56 +237,105 @@ export default function BookingPage() {
                 <CardTitle>Service Selection & Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Service Selection */}
+                {/* Pricing Mode */}
                 <div>
-                  <Label htmlFor="service" className="text-base font-semibold mb-4 block">
-                    Select Your Service
-                  </Label>
-                  <Select value={selectedService} onValueChange={setSelectedService}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose your cleaning service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(serviceCategories).map(([category, services]) => (
-                        <div key={category}>
-                          <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50">
-                            {category}
-                          </div>
-                          {services.map((service) => (
-                            <SelectItem key={service.key} value={service.key}>
-                              <div className="flex justify-between items-center w-full">
-                                <span>{service.name}</span>
-                                <div className="text-right ml-4">
-                                  <div className="font-semibold">${service.price} CAD</div>
-                                  <div className="text-xs text-muted-foreground">{service.cleaners}</div>
-                                </div>
+                  <Label className="text-base font-semibold mb-2 block">Pricing</Label>
+                  <RadioGroup
+                    value={pricingMode}
+                    onValueChange={(val) => setPricingMode(val as "flat" | "hourly")}
+                    className="grid grid-cols-2 gap-3 mb-4"
+                  >
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                      <RadioGroupItem value="flat" id="pricing-flat" />
+                      <Label htmlFor="pricing-flat" className="cursor-pointer">Flat Rate</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg">
+                      <RadioGroupItem value="hourly" id="pricing-hourly" />
+                      <Label htmlFor="pricing-hourly" className="cursor-pointer">Per Hour</Label>
+                    </div>
+                  </RadioGroup>
+
+                  {pricingMode === "flat" ? (
+                    <>
+                      <Label htmlFor="service" className="text-base font-semibold mb-4 block">
+                        Select Your Service
+                      </Label>
+                      <Select value={selectedService} onValueChange={setSelectedService}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose your cleaning service" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(serviceCategories).map(([category, services]) => (
+                            <div key={category}>
+                              <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50">
+                                {category}
                               </div>
-                            </SelectItem>
+                              {services.map((service) => (
+                                <SelectItem key={service.key} value={service.key}>
+                                  <div className="flex justify-between items-center w-full">
+                                    <span>{service.name}</span>
+                                    <div className="text-right ml-4">
+                                      <div className="font-semibold">${service.price} CAD</div>
+                                      <div className="text-xs text-muted-foreground">{service.cleaners}</div>
+                                    </div>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </div>
                           ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedService && (
+                        <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="font-medium">
+                                {servicePricing[selectedService as keyof typeof servicePricing]?.name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {servicePricing[selectedService as keyof typeof servicePricing]?.cleaners} • Professional
+                                Equipment Included
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold">
+                                ${servicePricing[selectedService as keyof typeof servicePricing]?.price} CAD
+                              </p>
+                              <p className="text-xs text-muted-foreground">Flat Rate</p>
+                            </div>
+                          </div>
                         </div>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedService && (
-                    <div className="mt-2 p-3 bg-muted/50 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium">
-                            {servicePricing[selectedService as keyof typeof servicePricing]?.name}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {servicePricing[selectedService as keyof typeof servicePricing]?.cleaners} • Professional
-                            Equipment Included
-                          </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="p-3 bg-muted/50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">Hourly Cleaning</p>
+                            <p className="text-sm text-muted-foreground">Professional equipment included • $35/hr</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold">${HOURLY_RATE}/hr</p>
+                            <p className="text-xs text-muted-foreground">2-hour minimum</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold">
-                            ${servicePricing[selectedService as keyof typeof servicePricing]?.price} CAD
-                          </p>
-                          <p className="text-xs text-muted-foreground">Flat Rate</p>
+                        <div className="mt-4">
+                          <Label className="text-sm mb-2 block">Hours</Label>
+                          <div className="flex items-center gap-4">
+                            <Slider
+                              min={2}
+                              max={8}
+                              step={1}
+                              value={[hourlyHours]}
+                              onValueChange={(v) => setHourlyHours(v[0])}
+                              className="flex-1"
+                            />
+                            <div className="w-12 text-right font-semibold">{hourlyHours}h</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
 
