@@ -13,8 +13,7 @@ export default function ServicesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Cleaning Services</h1>
           <p className="text-xl text-white/90 max-w-3xl mx-auto">
-            Professional cleaning solutions tailored to your needs. Choose from hourly services or comprehensive
-            packages.
+            Professional cleaning solutions tailored to your needs. Choose from comprehensive packages.
           </p>
         </div>
       </section>
@@ -157,32 +156,7 @@ export default function ServicesPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <Card className="text-center p-8">
-              <CardHeader>
-                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">⏱️</span>
-                </div>
-                <CardTitle className="text-2xl mb-2">Hourly Rate</CardTitle>
-                <p className="text-muted-foreground">Perfect for smaller jobs or specific tasks</p>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-primary">$35</span>
-                  <span className="text-muted-foreground">/hour</span>
-                </div>
-                <ul className="text-left space-y-2 text-sm text-muted-foreground mb-6">
-                  <li>• Minimum 2-hour booking</li>
-                  <li>• Flexible scheduling</li>
-                  <li>• Pay for time used</li>
-                  <li>• Perfect for touch-ups</li>
-                </ul>
-                <Button asChild className="w-full">
-                  <Link href="/booking">Book Hourly</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
+          <div className="grid md:grid-cols-1 gap-8 max-w-4xl mx-auto">
             <Card className="text-center p-8 border-primary border-2">
               <CardHeader>
                 <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
