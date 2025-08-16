@@ -18,8 +18,16 @@ export default function BookingSuccessPage() {
       // Fetch booking details from Stripe session
       fetch(`/api/booking-details?session_id=${sessionId}`)
         .then((res) => res.json())
-        .then((data) => {
+        .then(async (data) => {
           setBookingDetails(data)
+          // Fallback notify owner if payment succeeded
+          if (data?.paymentStatus === "paid") {
+            try {
+              await fetch(`/api/notify-owner?session_id=${sessionId}`, { method: "POST" })
+            } catch (e) {
+              console.error("Fallback owner notification failed:", e)
+            }
+          }
           setLoading(false)
         })
         .catch((error) => {
