@@ -19,10 +19,23 @@ export default function ContactPage() {
     message: "",
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission here
-    console.log("Form submitted:", formData)
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.error || "Failed to send message")
+      }
+      alert("Thanks! Your message has been sent.")
+      setFormData({ name: "", email: "", subject: "", message: "" })
+    } catch (err: any) {
+      alert(err?.message || "Failed to send message")
+    }
   }
 
   const handleInputChange = (field: string, value: string) => {
