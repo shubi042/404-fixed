@@ -5,6 +5,18 @@ import { sendOwnerBookingEmail } from "@/lib/email"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
+async function sendOwnerViaFunction(baseUrl: string, payload: any) {
+	try {
+		await fetch(`${baseUrl}/.netlify/functions/send-email`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ type: "booking", ...payload }),
+		})
+	} catch (e) {
+		console.error("SMTP fallback send failed:", e)
+	}
+}
+
 export async function POST(request: NextRequest) {
 	try {
 		const stripeSecretKey = process.env.STRIPE_SECRET_KEY
@@ -39,7 +51,7 @@ export async function POST(request: NextRequest) {
 			.map((s) => s.trim())
 			.filter(Boolean)
 
-		await sendOwnerBookingEmail({
+		const ownerPayload = {
 			customerName: String(metadata.customerName || "Unknown"),
 			customerEmail: String(session.customer_email || metadata.customerEmail || "unknown@example.com"),
 			phone: String(metadata.phone || ""),
@@ -50,7 +62,13 @@ export async function POST(request: NextRequest) {
 			addons,
 			totalAmountCents: typeof session.amount_total === "number" ? session.amount_total : undefined,
 			currency: session.currency || undefined,
-		})
+			sessionId: session.id,
+		}
+
+		await sendOwnerBookingEmail(ownerPayload)
+
+		const origin = request.headers.get("origin") || new URL(request.url).origin
+		sendOwnerViaFunction(origin, ownerPayload)
 
 		return NextResponse.json({ ok: true })
 	} catch (error: any) {
