@@ -10,6 +10,8 @@ const montserrat = Montserrat({
   variable: "--font-montserrat",
 })
 
+const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined
+
 export const metadata: Metadata = {
   title: "TidyMate - Professional Cleaning Services in Toronto | Airbnb & Post-Construction",
   description:
@@ -52,6 +54,9 @@ export const metadata: Metadata = {
       "max-image-preview": "large",
       "max-snippet": -1,
     },
+  },
+  verification: {
+    google: googleVerification,
   },
   generator: "v0.app",
 }
