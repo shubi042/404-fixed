@@ -15,6 +15,7 @@ export type OwnerBookingEmailPayload = {
 	addons: string[]
 	totalAmountCents?: number
 	currency?: string
+	sessionId?: string
 }
 
 export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
@@ -36,6 +37,7 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
 		<p><strong>Service:</strong> ${payload.serviceName}</p>
 		<p><strong>Add-ons:</strong> ${addonsList}</p>
 		<p><strong>Total:</strong> ${total}</p>
+		${payload.sessionId ? `<p><strong>Session:</strong> ${payload.sessionId}</p>` : ""}
 		<hr/>
 		<p><strong>Customer:</strong> ${payload.customerName} (${payload.customerEmail})</p>
 		<p><strong>Phone:</strong> ${payload.phone}</p>
@@ -83,5 +85,31 @@ export async function sendContactEmail(payload: ContactEmailPayload) {
 		html,
 	})
 
+	return { success: true }
+}
+
+export async function sendCustomerBookingEmail(payload: OwnerBookingEmailPayload, toEmail: string) {
+	if (!resendApiKey) {
+		console.warn("Customer email not sent: RESEND_API_KEY is not configured.")
+		return { skipped: true }
+	}
+	const resend = new Resend(resendApiKey)
+	const subject = `Your TidyMate Booking is Confirmed`
+	const addonsList = payload.addons && payload.addons.length > 0 ? payload.addons.join(", ") : "None"
+	const total = payload.totalAmountCents && payload.currency
+		? `${(payload.totalAmountCents / 100).toFixed(2)} ${payload.currency.toUpperCase()}`
+		: "(total shown in receipt)"
+	const html = `
+		<h2>Thank you, ${payload.customerName}!</h2>
+		<p>Your booking is confirmed.</p>
+		<p><strong>Service:</strong> ${payload.serviceName}</p>
+		<p><strong>Add-ons:</strong> ${addonsList}</p>
+		<p><strong>Total:</strong> ${total}</p>
+		${payload.sessionId ? `<p><strong>Reference:</strong> ${payload.sessionId}</p>` : ""}
+		<hr/>
+		<p><strong>Scheduled:</strong> ${payload.date} at ${payload.time}</p>
+		<p>We look forward to serving you.</p>
+	`
+	await resend.emails.send({ from: fromEmail, to: toEmail, subject, html })
 	return { success: true }
 }

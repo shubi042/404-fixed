@@ -67,10 +67,10 @@ export default function BookingSuccessPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
         <Card>
           <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
@@ -81,8 +81,8 @@ export default function BookingSuccessPage() {
             </p>
           </CardHeader>
 
-          <CardContent className="space-y-6">
-            <div className="bg-muted/50 p-4 rounded-lg">
+          <CardContent className="space-y-5 sm:space-y-6">
+            <div className="bg-muted/50 p-3 sm:p-4 rounded-lg">
               <h3 className="font-semibold mb-3">What happens next?</h3>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-start">
@@ -120,7 +120,7 @@ export default function BookingSuccessPage() {
               </div>
             )}
 
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-3 sm:space-y-4">
               <p className="text-sm text-muted-foreground">
                 A confirmation has been sent to your email. Our team also receives a notification to schedule your service.
               </p>

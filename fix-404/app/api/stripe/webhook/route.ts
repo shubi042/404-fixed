@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
-import { sendOwnerBookingEmail } from "@/lib/email"
+import { sendOwnerBookingEmail, sendCustomerBookingEmail } from "@/lib/email"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -70,9 +70,10 @@ export async function POST(request: NextRequest) {
 				sessionId: sessionWithLineItems.id,
 			}
 
-			// Primary: Resend
 			await sendOwnerBookingEmail(ownerPayload)
-			// Fallback: SMTP function (if PUBLIC_BASE_URL configured)
+			if (ownerPayload.customerEmail && ownerPayload.customerEmail !== "unknown@example.com") {
+				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
+			}
 			sendOwnerViaFunction(ownerPayload)
 		} catch (err) {
 			console.error("Error handling checkout.session.completed:", err)
