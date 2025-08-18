@@ -67,9 +67,45 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_ID
+  const businessJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: "TidyMate",
+    url: process.env.PUBLIC_BASE_URL || "https://tidymate.ca",
+    image: [
+      (process.env.PUBLIC_BASE_URL || "https://tidymate.ca") + "/logo.png"
+    ],
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: "Toronto",
+      addressRegion: "ON",
+      addressCountry: "CA"
+    },
+    areaServed: "Toronto and GTA",
+    telephone: "+1",
+    sameAs: []
+  }
+
   return (
     <html lang="en" className={`${montserrat.variable} antialiased`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(businessJsonLd) }}
+        />
+        {gaId ? (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config','${gaId}');`,
+              }}
+            />
+          </>
+        ) : null}
+      </body>
     </html>
   )
 }
