@@ -22,15 +22,26 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const res = await fetch("/api/contact", {
+      // Try Netlify Function first
+      const fnRes = await fetch("/.netlify/functions/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ type: "contact", ...formData }),
       })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data?.error || "Failed to send message")
+
+      if (!fnRes.ok) {
+        // Fallback to API route
+        const res = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data?.error || "Failed to send message")
+        }
       }
+
       alert("Thanks! Your message has been sent.")
       setFormData({ name: "", email: "", subject: "", message: "" })
     } catch (err: any) {

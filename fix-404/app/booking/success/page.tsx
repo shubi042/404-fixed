@@ -24,6 +24,15 @@ export default function BookingSuccessPage() {
           if (data?.paymentStatus === "paid") {
             try {
               await fetch(`/api/notify-owner?session_id=${sessionId}`, { method: "POST" })
+              // SMTP fallback via Netlify Function (best effort)
+              const base = process.env.NEXT_PUBLIC_BASE_URL
+              if (base) {
+                await fetch(`${base}/.netlify/functions/send-email`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ type: "booking", sessionId }),
+                })
+              }
             } catch (e) {
               console.error("Fallback owner notification failed:", e)
             }

@@ -5,6 +5,20 @@ import { sendOwnerBookingEmail } from "@/lib/email"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
+async function sendOwnerViaFunction(payload: any) {
+	try {
+		const baseUrl = process.env.PUBLIC_BASE_URL
+		if (!baseUrl) return
+		await fetch(`${baseUrl}/.netlify/functions/send-email`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ type: "booking", ...payload }),
+		})
+	} catch (e) {
+		console.error("SMTP fallback send failed:", e)
+	}
+}
+
 export async function POST(request: NextRequest) {
 	const stripeSecret = process.env.STRIPE_SECRET_KEY
 	const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -42,7 +56,7 @@ export async function POST(request: NextRequest) {
 				.map((s) => s.trim())
 				.filter(Boolean)
 
-			await sendOwnerBookingEmail({
+			const ownerPayload = {
 				customerName: String(metadata.customerName || "Unknown"),
 				customerEmail: String(sessionWithLineItems.customer_email || metadata.customerEmail || "unknown@example.com"),
 				phone: String(metadata.phone || ""),
@@ -53,7 +67,13 @@ export async function POST(request: NextRequest) {
 				addons,
 				totalAmountCents: typeof sessionWithLineItems.amount_total === "number" ? sessionWithLineItems.amount_total : undefined,
 				currency: sessionWithLineItems.currency || undefined,
-			})
+				sessionId: sessionWithLineItems.id,
+			}
+
+			// Primary: Resend
+			await sendOwnerBookingEmail(ownerPayload)
+			// Fallback: SMTP function (if PUBLIC_BASE_URL configured)
+			sendOwnerViaFunction(ownerPayload)
 		} catch (err) {
 			console.error("Error handling checkout.session.completed:", err)
 		}
