@@ -1,21 +1,19 @@
 const nodemailer = require("nodemailer")
+// Use dynamic import for ESM-only modules like resend when needed
 
 exports.handler = async function (event) {
+	const corsHeaders = {
+		"Access-Control-Allow-Origin": "*",
+		"Access-Control-Allow-Headers": "Content-Type",
+		"Access-Control-Allow-Methods": "POST, OPTIONS",
+	}
 	// CORS preflight
 	if (event.httpMethod === "OPTIONS") {
-		return {
-			statusCode: 200,
-			headers: {
-				"Access-Control-Allow-Origin": "*",
-				"Access-Control-Allow-Headers": "Content-Type",
-				"Access-Control-Allow-Methods": "POST, OPTIONS",
-			},
-			body: "",
-		}
+		return { statusCode: 200, headers: corsHeaders, body: "" }
 	}
 
 	if (event.httpMethod !== "POST") {
-		return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) }
+		return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: "Method Not Allowed" }) }
 	}
 
 	try {
@@ -27,18 +25,12 @@ exports.handler = async function (event) {
 			SMTP_PASS,
 			MAIL_FROM = process.env.FROM_EMAIL || "services@tidymate.ca",
 			MAIL_TO = process.env.CONTACT_TO_EMAIL || process.env.OWNER_NOTIFICATION_EMAIL || "services@tidymate.ca",
+			RESEND_API_KEY,
 		} = process.env
 
-		if (!SMTP_USER || !SMTP_PASS) {
-			return { statusCode: 500, body: JSON.stringify({ error: "SMTP credentials not configured" }) }
+		if (!RESEND_API_KEY && (!SMTP_USER || !SMTP_PASS)) {
+			return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: "Email provider not configured" }) }
 		}
-
-		const transporter = nodemailer.createTransport({
-			host: SMTP_HOST,
-			port: Number(SMTP_PORT),
-			secure: SMTP_SECURE === "true" || Number(SMTP_PORT) === 465,
-			auth: { user: SMTP_USER, pass: SMTP_PASS },
-		})
 
 		const body = JSON.parse(event.body || "{}")
 		const type = body.type || "contact"
@@ -71,18 +63,29 @@ exports.handler = async function (event) {
 				<p><strong>Stripe Session:</strong> ${body.sessionId || ""}</p>
 			`
 		} else {
-			return { statusCode: 400, body: JSON.stringify({ error: "Invalid type" }) }
+			return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: "Invalid type" }) }
 		}
 
-		await transporter.sendMail({ from: MAIL_FROM, to, subject, html })
-
-		return {
-			statusCode: 200,
-			headers: { "Access-Control-Allow-Origin": "*" },
-			body: JSON.stringify({ ok: true }),
+		// Prefer Resend if configured
+		if (RESEND_API_KEY) {
+			const { Resend } = await import("resend")
+			const resend = new Resend(RESEND_API_KEY)
+			await resend.emails.send({ from: process.env.FROM_EMAIL || "onboarding@resend.dev", to, subject, html })
+		} else {
+			// Fallback to SMTP via Nodemailer
+			const transporter = nodemailer.createTransport({
+				host: SMTP_HOST,
+				port: Number(SMTP_PORT),
+				secure: SMTP_SECURE === "true" || Number(SMTP_PORT) === 465,
+				auth: { user: SMTP_USER, pass: SMTP_PASS },
+			})
+			await transporter.sendMail({ from: MAIL_FROM, to, subject, html })
 		}
+
+		return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ ok: true }) }
 	} catch (err) {
 		console.error("send-email error:", err)
-		return { statusCode: 500, body: JSON.stringify({ error: "Failed to send email" }) }
+		const message = err && err.message ? err.message : "Failed to send email"
+		return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: message }) }
 	}
 }
