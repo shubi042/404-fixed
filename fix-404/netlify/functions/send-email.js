@@ -22,10 +22,9 @@ exports.handler = async function (event) {
 		const {
 			SMTP_HOST = "mail.privateemail.com",
 			SMTP_PORT = "465",
-			SMTP_SECURE = "true",
+			SMTP_SECURE,
 			SMTP_USER,
 			SMTP_PASS,
-			MAIL_FROM = process.env.FROM_EMAIL || "services@tidymate.ca",
 			MAIL_TO = process.env.CONTACT_TO_EMAIL || process.env.OWNER_NOTIFICATION_EMAIL || "services@tidymate.ca",
 		} = process.env
 
@@ -33,10 +32,11 @@ exports.handler = async function (event) {
 			return { statusCode: 500, body: JSON.stringify({ error: "SMTP credentials not configured" }) }
 		}
 
+		const secure = SMTP_SECURE ? SMTP_SECURE === "true" : Number(SMTP_PORT) === 465
 		const transporter = nodemailer.createTransport({
 			host: SMTP_HOST,
 			port: Number(SMTP_PORT),
-			secure: SMTP_SECURE === "true" || Number(SMTP_PORT) === 465,
+			secure,
 			auth: { user: SMTP_USER, pass: SMTP_PASS },
 		})
 
@@ -46,6 +46,8 @@ exports.handler = async function (event) {
 		let subject = body.subject || ""
 		let html = ""
 		let to = body.to || MAIL_TO
+		const from = SMTP_USER // enforce sender matches mailbox to avoid rejection
+		const replyTo = body.email && typeof body.email === "string" ? body.email : undefined
 
 		if (type === "contact") {
 			subject = subject || `[Contact] ${body.name || "New Message"}`
@@ -74,7 +76,7 @@ exports.handler = async function (event) {
 			return { statusCode: 400, body: JSON.stringify({ error: "Invalid type" }) }
 		}
 
-		await transporter.sendMail({ from: MAIL_FROM, to, subject, html })
+		await transporter.sendMail({ from, to, subject, html, replyTo })
 
 		return {
 			statusCode: 200,
@@ -83,6 +85,6 @@ exports.handler = async function (event) {
 		}
 	} catch (err) {
 		console.error("send-email error:", err)
-		return { statusCode: 500, body: JSON.stringify({ error: "Failed to send email" }) }
+		return { statusCode: 500, body: JSON.stringify({ error: "Failed to send email", details: String(err && err.message || err) }) }
 	}
 }
