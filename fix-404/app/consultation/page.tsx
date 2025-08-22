@@ -27,7 +27,7 @@ export default function ConsultationPage() {
             {/* Calendly Widget */}
             <div className="w-full">
               <iframe
-                src="https://calendly.com/YOUR-USERNAME/cleaning-consultation?embed_domain=yourdomain.com&embed_type=Inline&hide_event_type_details=1&hide_gdpr_banner=1&primary_color=000000&text_color=4d4d4d"
+                src="https://calendly.com/services-tidymate/30min?embed_domain=${typeof window !== 'undefined' ? window.location.hostname : ''}&embed_type=Inline&hide_event_type_details=1&hide_gdpr_banner=1&primary_color=000000&text_color=4d4d4d"
                 width="100%"
                 height="700"
                 frameBorder="0"

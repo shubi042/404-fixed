@@ -31,15 +31,13 @@ Create the following event types in Calendly:
 - **Duration**: 15 minutes
 - **Description**: "Quick call to confirm your cleaning appointment details"
 
-### 3. Update the Calendly URL in the Code
+### 3. ✅ Calendly URL Updated
 
-In the file `fix-404/app/booking/page.tsx`, update line 19:
+Your Calendly integration is now active with username: **services-tidymate**
 
-```typescript
-src={`https://calendly.com/YOUR_CALENDLY_USERNAME/cleaning-consultation?embed_domain=${typeof window !== 'undefined' ? window.location.hostname : ''}&embed_type=Inline&hide_event_type_details=1&hide_gdpr_banner=1&primary_color=000000&text_color=4d4d4d&prefill_1=${encodedService}`}
-```
-
-Replace `your-calendly-username` with your actual Calendly username.
+Current URLs in the system:
+- Consultation bookings: `https://calendly.com/services-tidymate/30min`
+- Customer booking confirmations: `https://calendly.com/services-tidymate/booking-confirmation`
 
 ### 4. Calendly Webhook Configuration (Optional but Recommended)
 

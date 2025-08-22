@@ -24,6 +24,26 @@ export default function BookingSuccessPage() {
           if (data?.paymentStatus === "paid") {
             try {
               await fetch(`/api/notify-owner?session_id=${sessionId}`, { method: "POST" })
+              
+              // Automatically send Calendly link to customer
+              if (data.customerEmail && data.customerName) {
+                try {
+                  await fetch('/api/send-calendly-link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      customerEmail: data.customerEmail,
+                      customerName: data.customerName,
+                      serviceName: data.service,
+                      bookingDate: data.date,
+                      bookingTime: data.time
+                    })
+                  })
+                } catch (e) {
+                  console.error("Calendly link send failed:", e)
+                }
+              }
+              
               // SMTP fallback via Netlify Function (best effort)
               try {
                 const base = window.location.origin
@@ -91,7 +111,7 @@ export default function BookingSuccessPage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-primary mr-2">2.</span>
-                  <span>📅 Our team will send you a Calendly booking confirmation with the exact time slot</span>
+                  <span>📅 Check your email - we've automatically sent you a Calendly link to choose your exact time slot</span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-primary mr-2">3.</span>
@@ -126,7 +146,7 @@ export default function BookingSuccessPage() {
 
             <div className="text-center space-y-3 sm:space-y-4">
               <p className="text-sm text-muted-foreground">
-                A confirmation has been sent to your email. Our team also receives a notification and will send you a Calendly booking confirmation to finalize your appointment time.
+                A confirmation has been sent to your email along with a Calendly link to choose your exact time slot. Our team also receives a notification with your booking details.
               </p>
 
               <div className="flex gap-4 justify-center">

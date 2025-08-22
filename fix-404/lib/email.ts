@@ -37,8 +37,8 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
 		<div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
 			<h3>📅 CALENDLY ACTION NEEDED:</h3>
 			<p><strong>Send this link to customer to confirm their exact time slot:</strong></p>
-			<p><a href="https://calendly.com/YOUR-USERNAME/booking-confirmation" style="background: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Customer Calendly Booking Link</a></p>
-			<p><em>Replace YOUR-USERNAME with your actual Calendly username</em></p>
+			<p><a href="https://calendly.com/services-tidymate/booking-confirmation" style="background: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Customer Calendly Booking Link</a></p>
+			<p><em>Send this link to customer via email or text</em></p>
 		</div>
 		
 		<h3>Booking Details:</h3>
@@ -63,7 +63,7 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
 		</ol>
 		
 		<div style="background: #f0f9ff; padding: 10px; border-radius: 5px; margin-top: 15px;">
-			<p><strong>💡 Pro Tip:</strong> Once you set up your Calendly username, all customer bookings will automatically appear in your Calendly calendar!</p>
+			<p><strong>💡 Pro Tip:</strong> All customer bookings through Calendly will automatically appear in your calendar at calendly.com/services-tidymate!</p>
 		</div>
 	`
 
