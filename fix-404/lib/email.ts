@@ -46,11 +46,11 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
 		<hr/>
 		<p><strong>📅 Next Steps:</strong></p>
 		<ul>
-			<li>Send Calendly booking confirmation to customer</li>
+			<li>Send customer this Calendly link to confirm exact time: <strong>https://calendly.com/YOUR-USERNAME/booking-confirmation</strong></li>
 			<li>Schedule the cleaning service in your calendar</li>
 			<li>Confirm availability and send final confirmation</li>
 		</ul>
-		<p><em>💡 Tip: Use your Calendly integration to send the customer a booking confirmation with the exact time slot.</em></p>
+		<p><em>💡 Replace YOUR-USERNAME with your actual Calendly username</em></p>
 	`
 
 	await resend.emails.send({
