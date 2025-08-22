@@ -33,24 +33,38 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
 		: "(total shown in Stripe)"
 
 	const html = `
-		<h2>New Booking Received</h2>
+		<h2>🎉 New Booking Received - Action Required</h2>
+		<div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+			<h3>📅 CALENDLY ACTION NEEDED:</h3>
+			<p><strong>Send this link to customer to confirm their exact time slot:</strong></p>
+			<p><a href="https://calendly.com/YOUR-USERNAME/booking-confirmation" style="background: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Customer Calendly Booking Link</a></p>
+			<p><em>Replace YOUR-USERNAME with your actual Calendly username</em></p>
+		</div>
+		
+		<h3>Booking Details:</h3>
 		<p><strong>Service:</strong> ${payload.serviceName}</p>
 		<p><strong>Add-ons:</strong> ${addonsList}</p>
-		<p><strong>Total:</strong> ${total}</p>
-		${payload.sessionId ? `<p><strong>Session:</strong> ${payload.sessionId}</p>` : ""}
-		<hr/>
-		<p><strong>Customer:</strong> ${payload.customerName} (${payload.customerEmail})</p>
+		<p><strong>Total Paid:</strong> ${total}</p>
+		${payload.sessionId ? `<p><strong>Payment Session:</strong> ${payload.sessionId}</p>` : ""}
+		
+		<h3>Customer Information:</h3>
+		<p><strong>Name:</strong> ${payload.customerName}</p>
+		<p><strong>Email:</strong> ${payload.customerEmail}</p>
 		<p><strong>Phone:</strong> ${payload.phone}</p>
 		<p><strong>Address:</strong> ${payload.address}</p>
-		<p><strong>Preferred Date & Time:</strong> ${payload.date} at ${payload.time}</p>
-		<hr/>
-		<p><strong>📅 Next Steps:</strong></p>
-		<ul>
-			<li>Send customer this Calendly link to confirm exact time: <strong>https://calendly.com/YOUR-USERNAME/booking-confirmation</strong></li>
-			<li>Schedule the cleaning service in your calendar</li>
-			<li>Confirm availability and send final confirmation</li>
-		</ul>
-		<p><em>💡 Replace YOUR-USERNAME with your actual Calendly username</em></p>
+		<p><strong>Requested Date & Time:</strong> ${payload.date} at ${payload.time}</p>
+		
+		<hr style="margin: 20px 0;"/>
+		<h3>📋 Your Action Items:</h3>
+		<ol>
+			<li><strong>Send Calendly link above to customer</strong> - They'll pick exact time slot</li>
+			<li><strong>You'll get Calendly notification</strong> when they book</li>
+			<li><strong>Confirm service availability</strong> and send final details</li>
+		</ol>
+		
+		<div style="background: #f0f9ff; padding: 10px; border-radius: 5px; margin-top: 15px;">
+			<p><strong>💡 Pro Tip:</strong> Once you set up your Calendly username, all customer bookings will automatically appear in your Calendly calendar!</p>
+		</div>
 	`
 
 	await resend.emails.send({
@@ -108,22 +122,37 @@ export async function sendCustomerBookingEmail(payload: OwnerBookingEmailPayload
 		? `${(payload.totalAmountCents / 100).toFixed(2)} ${payload.currency.toUpperCase()}`
 		: "(total shown in receipt)"
 	const html = `
-		<h2>Thank you, ${payload.customerName}!</h2>
-		<p>Your booking is confirmed and payment has been processed.</p>
+		<h2>🎉 Thank you, ${payload.customerName}!</h2>
+		<p>Your booking is confirmed and payment has been processed successfully!</p>
+		
+		<div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
+			<h3>📅 Next Step: Choose Your Exact Time Slot</h3>
+			<p>You'll receive a <strong>Calendly booking link</strong> from us within 2 hours to select your preferred time slot.</p>
+		</div>
+		
+		<h3>Your Booking Details:</h3>
 		<p><strong>Service:</strong> ${payload.serviceName}</p>
 		<p><strong>Add-ons:</strong> ${addonsList}</p>
-		<p><strong>Total:</strong> ${total}</p>
-		${payload.sessionId ? `<p><strong>Reference:</strong> ${payload.sessionId}</p>` : ""}
-		<hr/>
-		<p><strong>Scheduled:</strong> ${payload.date} at ${payload.time}</p>
-		<p><strong>📅 What's Next:</strong></p>
-		<ul>
-			<li>You'll receive a Calendly booking confirmation with the exact time slot</li>
-			<li>Our team will confirm availability within 24 hours</li>
-			<li>We'll send you final preparation instructions before your cleaning</li>
-		</ul>
-		<p>We look forward to serving you!</p>
-		<p><em>Questions? Reply to this email or contact us at services@tidymate.ca</em></p>
+		<p><strong>Total Paid:</strong> ${total}</p>
+		${payload.sessionId ? `<p><strong>Reference ID:</strong> ${payload.sessionId}</p>` : ""}
+		
+		<p><strong>Requested Date & Time:</strong> ${payload.date} at ${payload.time}</p>
+		
+		<hr style="margin: 20px 0;"/>
+		<h3>📋 What Happens Next:</h3>
+		<ol>
+			<li><strong>We'll send you a Calendly link</strong> to pick your exact time slot</li>
+			<li><strong>Book your preferred time</strong> through Calendly</li>
+			<li><strong>Receive final confirmation</strong> with cleaner details</li>
+			<li><strong>Enjoy your professional cleaning!</strong></li>
+		</ol>
+		
+		<div style="background: #e6f7e6; padding: 10px; border-radius: 5px; margin-top: 15px;">
+			<p><strong>✅ Your payment is secure and confirmed!</strong></p>
+			<p>We look forward to providing you with exceptional cleaning service!</p>
+		</div>
+		
+		<p style="margin-top: 20px;"><em>Questions? Reply to this email or contact us at services@tidymate.ca</em></p>
 	`
 	await resend.emails.send({ from: fromEmail, to: toEmail, subject, html })
 	return { success: true }

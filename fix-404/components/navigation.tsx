@@ -29,6 +29,9 @@ export function Navigation() {
             <Link href="/booking" className="text-foreground hover:text-primary transition-colors font-medium">
               Book Now
             </Link>
+            <Link href="/consultation" className="text-foreground hover:text-primary transition-colors font-medium">
+              Free Consultation
+            </Link>
             <Link href="/contact" className="text-foreground hover:text-primary transition-colors font-medium">
               Contact
             </Link>
@@ -83,6 +86,13 @@ export function Navigation() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Book Now
+              </Link>
+              <Link
+                href="/consultation"
+                className="block px-3 py-2 text-foreground hover:text-primary hover:bg-secondary rounded-md transition-colors font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Free Consultation
               </Link>
               <Link
                 href="/contact"
