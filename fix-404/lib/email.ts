@@ -43,6 +43,14 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
 		<p><strong>Phone:</strong> ${payload.phone}</p>
 		<p><strong>Address:</strong> ${payload.address}</p>
 		<p><strong>Preferred Date & Time:</strong> ${payload.date} at ${payload.time}</p>
+		<hr/>
+		<p><strong>📅 Next Steps:</strong></p>
+		<ul>
+			<li>Send Calendly booking confirmation to customer</li>
+			<li>Schedule the cleaning service in your calendar</li>
+			<li>Confirm availability and send final confirmation</li>
+		</ul>
+		<p><em>💡 Tip: Use your Calendly integration to send the customer a booking confirmation with the exact time slot.</em></p>
 	`
 
 	await resend.emails.send({
@@ -101,14 +109,21 @@ export async function sendCustomerBookingEmail(payload: OwnerBookingEmailPayload
 		: "(total shown in receipt)"
 	const html = `
 		<h2>Thank you, ${payload.customerName}!</h2>
-		<p>Your booking is confirmed.</p>
+		<p>Your booking is confirmed and payment has been processed.</p>
 		<p><strong>Service:</strong> ${payload.serviceName}</p>
 		<p><strong>Add-ons:</strong> ${addonsList}</p>
 		<p><strong>Total:</strong> ${total}</p>
 		${payload.sessionId ? `<p><strong>Reference:</strong> ${payload.sessionId}</p>` : ""}
 		<hr/>
 		<p><strong>Scheduled:</strong> ${payload.date} at ${payload.time}</p>
-		<p>We look forward to serving you.</p>
+		<p><strong>📅 What's Next:</strong></p>
+		<ul>
+			<li>You'll receive a Calendly booking confirmation with the exact time slot</li>
+			<li>Our team will confirm availability within 24 hours</li>
+			<li>We'll send you final preparation instructions before your cleaning</li>
+		</ul>
+		<p>We look forward to serving you!</p>
+		<p><em>Questions? Reply to this email or contact us at services@tidymate.ca</em></p>
 	`
 	await resend.emails.send({ from: fromEmail, to: toEmail, subject, html })
 	return { success: true }

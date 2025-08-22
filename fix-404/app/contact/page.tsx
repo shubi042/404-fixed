@@ -42,7 +42,7 @@ export default function ContactPage() {
         }
       }
 
-      alert("Thanks! Your message has been sent.")
+      alert("Thanks! Your message has been sent successfully to services@tidymate.ca. We'll get back to you within 24 hours.")
       setFormData({ name: "", email: "", subject: "", message: "" })
     } catch (err: any) {
       alert(err?.message || "Failed to send message")
@@ -80,6 +80,12 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      📧 All messages sent through this form go directly to our business email: <strong>services@tidymate.ca</strong>
+                    </p>
+                  </div>
+                  
                   <div>
                     <Label htmlFor="name">Full Name</Label>
                     <Input

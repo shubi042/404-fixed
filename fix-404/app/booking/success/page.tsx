@@ -91,10 +91,14 @@ export default function BookingSuccessPage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-primary mr-2">2.</span>
-                  <span>Our team will contact you within 24 hours to confirm your appointment details</span>
+                  <span>📅 Our team will send you a Calendly booking confirmation with the exact time slot</span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-primary mr-2">3.</span>
+                  <span>We'll contact you within 24 hours to confirm your appointment details and availability</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-primary mr-2">4.</span>
                   <span>Our professional cleaners will arrive at your scheduled time with all equipment</span>
                 </li>
               </ul>
@@ -122,7 +126,7 @@ export default function BookingSuccessPage() {
 
             <div className="text-center space-y-3 sm:space-y-4">
               <p className="text-sm text-muted-foreground">
-                A confirmation has been sent to your email. Our team also receives a notification to schedule your service.
+                A confirmation has been sent to your email. Our team also receives a notification and will send you a Calendly booking confirmation to finalize your appointment time.
               </p>
 
               <div className="flex gap-4 justify-center">
