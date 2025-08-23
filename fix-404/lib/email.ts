@@ -1,7 +1,7 @@
 import { Resend } from "resend"
 
 const resendApiKey = process.env.RESEND_API_KEY
-const ownerEmail = process.env.OWNER_NOTIFICATION_EMAIL || "services@tidymate.ca"
+const ownerEmail = process.env.OWNER_NOTIFICATION_EMAIL || "shubi0411@gmail.com"
 const fromEmail = process.env.FROM_EMAIL || "onboarding@resend.dev"
 
 export type OwnerBookingEmailPayload = {
@@ -91,7 +91,7 @@ export async function sendContactEmail(payload: ContactEmailPayload) {
 	}
 	
 	const resend = new Resend(resendApiKey)
-	const to = process.env.CONTACT_TO_EMAIL || "services@tidymate.ca"
+	const to = process.env.CONTACT_TO_EMAIL || "shubi0411@gmail.com"
 	const subject = `[Contact] ${payload.subject || "New message"} — ${payload.name}`
 	
 	console.log("📧 Attempting to send email:", {
