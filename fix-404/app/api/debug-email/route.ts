@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 			hasResendKey: !!process.env.RESEND_API_KEY,
 			resendKeyPreview: process.env.RESEND_API_KEY ? `${process.env.RESEND_API_KEY.substring(0, 10)}...` : "NOT SET",
 			contactEmail: process.env.CONTACT_TO_EMAIL || "services@tidymate.ca",
-			fromEmail: process.env.FROM_EMAIL || "onboarding@resend.dev",
+			fromEmail: process.env.FROM_EMAIL || "noreply@tidymate.ca",
 			ownerEmail: process.env.OWNER_NOTIFICATION_EMAIL || "services@tidymate.ca"
 		}
 
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 				hasResendKey: !!process.env.RESEND_API_KEY,
 				resendKeyPreview: process.env.RESEND_API_KEY ? `${process.env.RESEND_API_KEY.substring(0, 10)}...` : "NOT SET",
 				contactEmail: process.env.CONTACT_TO_EMAIL || "services@tidymate.ca",
-				fromEmail: process.env.FROM_EMAIL || "onboarding@resend.dev"
+				fromEmail: process.env.FROM_EMAIL || "noreply@tidymate.ca"
 			},
 			solutions: [
 				"Check if RESEND_API_KEY is valid",

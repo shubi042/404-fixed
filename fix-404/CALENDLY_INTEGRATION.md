@@ -103,7 +103,7 @@ Make sure these are set:
 RESEND_API_KEY=your_resend_api_key
 OWNER_NOTIFICATION_EMAIL=services@tidymate.ca
 CONTACT_TO_EMAIL=services@tidymate.ca
-FROM_EMAIL=noreply@yourdomain.com
+FROM_EMAIL=noreply@tidymate.ca
 ```
 
 ## Next Steps

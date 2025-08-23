@@ -110,7 +110,7 @@ export default function TestContactPage() {
                 <ul className="text-sm space-y-1 font-mono">
                   <li>• RESEND_API_KEY=re_...</li>
                   <li>• CONTACT_TO_EMAIL=services@tidymate.ca</li>
-                  <li>• FROM_EMAIL=noreply@yourdomain.com</li>
+                  <li>• FROM_EMAIL=noreply@tidymate.ca</li>
                 </ul>
               </CardContent>
             </Card>

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 		console.log("Environment check:")
 		console.log("- RESEND_API_KEY exists:", !!process.env.RESEND_API_KEY)
 		console.log("- CONTACT_TO_EMAIL:", process.env.CONTACT_TO_EMAIL || "services@tidymate.ca")
-		console.log("- FROM_EMAIL:", process.env.FROM_EMAIL || "onboarding@resend.dev")
+		console.log("- FROM_EMAIL:", process.env.FROM_EMAIL || "noreply@tidymate.ca")
 
 		const result = await sendContactEmail(testPayload)
 		
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 			config: {
 				hasResendKey: !!process.env.RESEND_API_KEY,
 				contactEmail: process.env.CONTACT_TO_EMAIL || "services@tidymate.ca",
-				fromEmail: process.env.FROM_EMAIL || "onboarding@resend.dev"
+				fromEmail: process.env.FROM_EMAIL || "noreply@tidymate.ca"
 			}
 		})
 	} catch (error: any) {

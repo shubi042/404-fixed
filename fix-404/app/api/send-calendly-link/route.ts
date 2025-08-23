@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 
 const resendApiKey = process.env.RESEND_API_KEY
-const fromEmail = process.env.FROM_EMAIL || "onboarding@resend.dev"
+const fromEmail = process.env.FROM_EMAIL || "noreply@tidymate.ca"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
