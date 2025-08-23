@@ -116,7 +116,7 @@ export default function TestContactPage() {
                 <h3 className="font-semibold mb-2">🔧 Environment Variables Needed:</h3>
                 <ul className="text-sm space-y-1 font-mono">
                   <li>• RESEND_API_KEY=re_...</li>
-                  <li>• CONTACT_TO_EMAIL=services@tidymate.ca</li>
+                  <li>• CONTACT_TO_EMAIL=shubi0411@gmail.com</li>
                   <li>• FROM_EMAIL=noreply@yourdomain.com</li>
                 </ul>
               </CardContent>
