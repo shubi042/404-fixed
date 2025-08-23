@@ -1,7 +1,7 @@
 import { Resend } from "resend"
 
 const resendApiKey = process.env.RESEND_API_KEY
-const ownerEmail = process.env.OWNER_NOTIFICATION_EMAIL || "shubi0411@gmail.com"
+const ownerEmail = process.env.OWNER_NOTIFICATION_EMAIL || "services@tidymate.ca"
 const fromEmail = process.env.FROM_EMAIL || "onboarding@resend.dev"
 
 export type OwnerBookingEmailPayload = {
@@ -86,12 +86,21 @@ export type ContactEmailPayload = {
 
 export async function sendContactEmail(payload: ContactEmailPayload) {
 	if (!resendApiKey) {
-		console.warn("Contact email not sent: RESEND_API_KEY is not configured.")
-		return { skipped: true }
+		console.error("❌ RESEND_API_KEY is not configured")
+		return { skipped: true, error: "RESEND_API_KEY not configured" }
 	}
+	
 	const resend = new Resend(resendApiKey)
-	const to = process.env.CONTACT_TO_EMAIL || "shubi0411@gmail.com"
+	const to = process.env.CONTACT_TO_EMAIL || "services@tidymate.ca"
 	const subject = `[Contact] ${payload.subject || "New message"} — ${payload.name}`
+	
+	console.log("📧 Attempting to send email:", {
+		from: fromEmail,
+		to: to,
+		subject: subject,
+		hasApiKey: !!resendApiKey
+	})
+	
 	const html = `
 		<h2>New Contact Form Submission</h2>
 		<p><strong>Name:</strong> ${payload.name}</p>
@@ -100,14 +109,20 @@ export async function sendContactEmail(payload: ContactEmailPayload) {
 		<p><strong>Message:</strong><br/>${payload.message.replace(/\n/g, "<br/>")}</p>
 	`
 
-	await resend.emails.send({
-		from: fromEmail,
-		to,
-		subject,
-		html,
-	})
-
-	return { success: true }
+	try {
+		const result = await resend.emails.send({
+			from: fromEmail,
+			to,
+			subject,
+			html,
+		})
+		
+		console.log("✅ Email sent successfully:", result)
+		return { success: true, result }
+	} catch (error: any) {
+		console.error("❌ Email send failed:", error)
+		throw new Error(`Email send failed: ${error.message}`)
+	}
 }
 
 export async function sendCustomerBookingEmail(payload: OwnerBookingEmailPayload, toEmail: string) {

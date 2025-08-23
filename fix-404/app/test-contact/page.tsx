@@ -38,23 +38,16 @@ export default function TestContactPage() {
     }
   }
 
-  const testCalendlyAPI = async () => {
+  const testDebugAPI = async () => {
     setLoading(true)
-    setResult("Testing Calendly API...")
+    setResult("Running detailed email debug...")
     
     try {
-      const response = await fetch('/api/send-calendly-link', {
+      const response = await fetch('/api/debug-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          customerEmail: 'test@example.com',
-          customerName: 'Test Customer',
-          serviceName: 'Test Service',
-          bookingDate: '2024-01-15',
-          bookingTime: 'Morning'
-        })
+        }
       })
       
       const data = await response.json()
@@ -82,8 +75,8 @@ export default function TestContactPage() {
               <Button onClick={testContactAPI} disabled={loading}>
                 Test Contact API
               </Button>
-              <Button onClick={testCalendlyAPI} disabled={loading} variant="outline">
-                Test Calendly API
+              <Button onClick={testDebugAPI} disabled={loading} variant="destructive">
+                🔍 Debug Email Config
               </Button>
             </div>
             
@@ -116,7 +109,7 @@ export default function TestContactPage() {
                 <h3 className="font-semibold mb-2">🔧 Environment Variables Needed:</h3>
                 <ul className="text-sm space-y-1 font-mono">
                   <li>• RESEND_API_KEY=re_...</li>
-                  <li>• CONTACT_TO_EMAIL=shubi0411@gmail.com</li>
+                  <li>• CONTACT_TO_EMAIL=services@tidymate.ca</li>
                   <li>• FROM_EMAIL=noreply@yourdomain.com</li>
                 </ul>
               </CardContent>
