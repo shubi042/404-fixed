@@ -19,6 +19,20 @@ async function sendOwnerViaFunction(payload: any) {
 	}
 }
 
+async function triggerZapierAssignment(payload: any) {
+	try {
+		const zapierWebhookUrl = process.env.ZAPIER_ASSIGNMENT_WEBHOOK_URL
+		if (!zapierWebhookUrl) return
+		await fetch(zapierWebhookUrl, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(payload),
+		})
+	} catch (e) {
+		console.error("Zapier trigger failed:", e)
+	}
+}
+
 export async function POST(request: NextRequest) {
 	const stripeSecret = process.env.STRIPE_SECRET_KEY
 	const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -68,6 +82,8 @@ export async function POST(request: NextRequest) {
 				totalAmountCents: typeof sessionWithLineItems.amount_total === "number" ? sessionWithLineItems.amount_total : undefined,
 				currency: sessionWithLineItems.currency || undefined,
 				sessionId: sessionWithLineItems.id,
+				bookedAt: new Date().toISOString(),
+				paymentStatus: sessionWithLineItems.payment_status || "paid"
 			}
 
 			await sendOwnerBookingEmail(ownerPayload)
@@ -75,6 +91,7 @@ export async function POST(request: NextRequest) {
 				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
 			}
 			sendOwnerViaFunction(ownerPayload)
+			triggerZapierAssignment(ownerPayload)
 		} catch (err) {
 			console.error("Error handling checkout.session.completed:", err)
 		}

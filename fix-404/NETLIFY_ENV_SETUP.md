@@ -16,6 +16,9 @@ FROM_EMAIL=noreply@tidymate.ca
 # Stripe Configuration (if using payments)
 STRIPE_SECRET_KEY=sk_xxxxxxxxxxxxxxxxx
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_xxxxxxxxxxxxxxxxx
+
+# Zapier Assignment Hook
+ZAPIER_ASSIGNMENT_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/xxxxxxxx/xxxxxxxx
 ```
 
 ## **HOW TO ADD:**
@@ -30,7 +33,6 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_xxxxxxxxxxxxxxxxx
 All emails will now go to: **services@tidymate.ca**
 - ✅ Contact form submissions
 - ✅ Booking notifications  
-- ✅ Calendly confirmations
 - ✅ Customer notifications
 
 ## **EMAIL FLOW:**
@@ -39,7 +41,7 @@ All emails will now go to: **services@tidymate.ca**
 Contact Form → services@tidymate.ca
 Booking Notifications → services@tidymate.ca  
 From Address → noreply@tidymate.ca
-Customer Emails → [Customer's email with Calendly links]
+Customer Emails → [Customer's booking receipt/confirmation]
 ```
 
 **After setting these variables, redeploy your site for changes to take effect.**

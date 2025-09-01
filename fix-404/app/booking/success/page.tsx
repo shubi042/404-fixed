@@ -111,7 +111,7 @@ export default function BookingSuccessPage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-primary mr-2">2.</span>
-                  <span>📅 Check your email - we've automatically sent you a Calendly link to choose your exact time slot</span>
+                  <span>We are assigning a professional to your job and will confirm your appointment by email</span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-primary mr-2">3.</span>
@@ -146,7 +146,7 @@ export default function BookingSuccessPage() {
 
             <div className="text-center space-y-3 sm:space-y-4">
               <p className="text-sm text-muted-foreground">
-                A confirmation has been sent to your email along with a Calendly link to choose your exact time slot. Our team also receives a notification with your booking details.
+                A confirmation has been sent to your email. Our team is assigning a subcontractor and will confirm the appointment details shortly.
               </p>
 
               <div className="flex gap-4 justify-center">
