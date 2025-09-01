@@ -156,6 +156,11 @@ export default function BookingSuccessPage() {
                 <Button asChild>
                   <Link href="/booking">Book Another Service</Link>
                 </Button>
+                <Button asChild variant="secondary">
+                  <Link href={process.env.NEXT_PUBLIC_CALENDLY_CONFIRMATION_URL || "https://calendly.com/services-tidymate/booking-confirmation"} target="_blank">
+                    Pick Time Now
+                  </Link>
+                </Button>
               </div>
             </div>
           </CardContent>

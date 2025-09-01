@@ -3,6 +3,7 @@ import { Resend } from "resend"
 
 const resendApiKey = process.env.RESEND_API_KEY
 const fromEmail = process.env.FROM_EMAIL || "noreply@tidymate.ca"
+const calendlyConfirmationUrl = process.env.CALENDLY_CONFIRMATION_URL || "https://calendly.com/services-tidymate/booking-confirmation"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
 			<div style="background: #f0f9ff; padding: 20px; border-radius: 10px; margin: 20px 0; text-align: center;">
 				<h3>🗓️ Click Below to Choose Your Time</h3>
 				<p style="margin: 15px 0;">Select the exact time that works best for you:</p>
-				<a href="https://calendly.com/services-tidymate/booking-confirmation" 
+				<a href="${calendlyConfirmationUrl}" 
 				   style="background: #0066cc; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
 					📅 BOOK YOUR TIME SLOT
 				</a>

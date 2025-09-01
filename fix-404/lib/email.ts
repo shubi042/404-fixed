@@ -3,6 +3,8 @@ import { Resend } from "resend"
 const resendApiKey = process.env.RESEND_API_KEY
 const ownerEmail = process.env.OWNER_NOTIFICATION_EMAIL || "services@tidymate.ca"
 const fromEmail = process.env.FROM_EMAIL || "noreply@tidymate.ca"
+const calendlyUsername = process.env.NEXT_PUBLIC_CALENDLY_USERNAME || "services-tidymate"
+const calendlyConfirmationUrl = process.env.CALENDLY_CONFIRMATION_URL || `https://calendly.com/${calendlyUsername}/booking-confirmation`
 
 export type OwnerBookingEmailPayload = {
 	customerName: string
@@ -37,7 +39,7 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
 		<div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
 			<h3>📅 CALENDLY ACTION NEEDED:</h3>
 			<p><strong>Send this link to customer to confirm their exact time slot:</strong></p>
-			<p><a href="https://calendly.com/services-tidymate/booking-confirmation" style="background: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Customer Calendly Booking Link</a></p>
+			<p><a href="${calendlyConfirmationUrl}" style="background: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Customer Calendly Booking Link</a></p>
 			<p><em>Send this link to customer via email or text</em></p>
 		</div>
 		
@@ -63,7 +65,7 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
 		</ol>
 		
 		<div style="background: #f0f9ff; padding: 10px; border-radius: 5px; margin-top: 15px;">
-			<p><strong>💡 Pro Tip:</strong> All customer bookings through Calendly will automatically appear in your calendar at calendly.com/services-tidymate!</p>
+			<p><strong>💡 Pro Tip:</strong> All customer bookings through Calendly will automatically appear in your calendar at calendly.com/${calendlyUsername}!</p>
 		</div>
 	`
 
