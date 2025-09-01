@@ -58,25 +58,16 @@ export async function addBookingToSheet(bookingData: Partial<BookingRowData>): P
       throw new Error("Google Sheets ID not configured. Please set GOOGLE_SHEETS_ID environment variable.")
     }
 
-    // Prepare booking data for the sheet
+    // Prepare booking data for the sheet (adjusted for your current structure)
     const bookingRow = [
-      bookingData.timestamp || new Date().toISOString(),
-      bookingData.customerName || "",
-      bookingData.customerEmail || "",
-      bookingData.phone || "",
-      bookingData.address || "",
-      bookingData.date || "",
-      bookingData.time || "",
-      bookingData.serviceName || "",
-      bookingData.addons || "",
-      bookingData.totalAmount || 0,
-      bookingData.currency || "CAD",
-      bookingData.sessionId || "",
-      bookingData.instructions || "",
-      "", // Assigned subcontractor (will be filled by your existing formula)
-      "", // Subcontractor email (will be filled by your existing formula)
-      "", // Subcontractor phone (will be filled by your existing formula)
-      bookingData.status || "Pending",
+      bookingData.timestamp || new Date().toISOString(), // A: Timestamp
+      bookingData.customerName || "",                     // B: Client Name
+      bookingData.serviceName || "",                      // C: Service
+      bookingData.date || "",                            // D: Date
+      bookingData.time || "",                            // E: Time
+      "", // F: Assigned subcontractor (will be filled by your existing formula)
+      "", // G: Subcontractor email (will be filled by your existing formula)
+      "", // H: Notified (will be filled by your existing formula)
     ]
 
     console.log("📊 Adding booking to Google Sheets:", {
@@ -88,7 +79,7 @@ export async function addBookingToSheet(bookingData: Partial<BookingRowData>): P
     // Add the booking to the sheet
     const appendResult = await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A:Q`,
+      range: `${SHEET_NAME}!A:H`, // Adjusted range for your sheet structure
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [bookingRow],
@@ -108,7 +99,7 @@ export async function addBookingToSheet(bookingData: Partial<BookingRowData>): P
     // Read back the row to get the assigned subcontractor info
     const readResult = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!N${rowNumber}:P${rowNumber}`, // Columns N, O, P for subcontractor info
+      range: `${SHEET_NAME}!F${rowNumber}:H${rowNumber}`, // Columns F, G, H for subcontractor info (adjusted for your sheet)
     })
 
     const subcontractorData = readResult.data.values?.[0]
