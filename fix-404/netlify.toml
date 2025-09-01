@@ -1,6 +1,6 @@
 [build]
-  command = "npm run build && cp -r .next/standalone/. .next/deploy && cp -r .next/static .next/deploy/_next/static && cp -r public .next/deploy/public"
-  publish = ".next/deploy"
+  command = "npm run build"
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -9,7 +9,19 @@
   package = "@netlify/plugin-nextjs"
 
 [functions]
-  external_node_modules = ["googleapis", "resend", "stripe"]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["googleapis", "resend"]
+
+[[redirects]]
+  from = "/api/test-sheets"
+  to = "/.netlify/functions/test-sheets"
+  status = 200
+
+[[redirects]]
+  from = "/api/zapier-webhook"
+  to = "/.netlify/functions/zapier-webhook"
+  status = 200
 
 [[headers]]
   for = "/*"

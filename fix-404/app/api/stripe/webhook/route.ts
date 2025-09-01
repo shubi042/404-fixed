@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
 import { sendOwnerBookingEmail, sendCustomerBookingEmail, sendSubcontractorNotificationEmail } from "@/lib/email"
-import { addBookingToSheet } from "@/lib/google-sheets"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -79,32 +78,13 @@ export async function POST(request: NextRequest) {
 				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
 			}
 			
-			// Add to Google Sheets and assign subcontractor
+			// Add to Google Sheets via Netlify function
 			try {
-				const bookingForSheet = {
-					timestamp: new Date().toISOString(),
-					customerName: ownerPayload.customerName,
-					customerEmail: ownerPayload.customerEmail,
-					phone: ownerPayload.phone,
-					address: ownerPayload.address,
-					date: ownerPayload.date,
-					time: ownerPayload.time,
-					serviceName: ownerPayload.serviceName,
-					addons: ownerPayload.addons.join(", "),
-					totalAmount: ownerPayload.totalAmountCents ? ownerPayload.totalAmountCents / 100 : 0,
-					currency: ownerPayload.currency || "CAD",
-					sessionId: ownerPayload.sessionId,
-					instructions: metadata.instructions || "",
-					status: "Pending"
-				}
-
-				const { assignedSubcontractor, rowNumber } = await addBookingToSheet(bookingForSheet)
-				
-				if (assignedSubcontractor) {
-					console.log(`🎯 Subcontractor ${assignedSubcontractor.name} assigned to booking ${ownerPayload.sessionId}`)
-					
-					// Send notification to assigned subcontractor
-					const bookingDataForEmail = {
+				const baseUrl = process.env.PUBLIC_BASE_URL || 'https://tidymate.ca'
+				await fetch(`${baseUrl}/.netlify/functions/zapier-webhook`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
 						customerName: ownerPayload.customerName,
 						customerEmail: ownerPayload.customerEmail,
 						phone: ownerPayload.phone,
@@ -117,13 +97,9 @@ export async function POST(request: NextRequest) {
 						currency: ownerPayload.currency || "CAD",
 						sessionId: ownerPayload.sessionId,
 						instructions: metadata.instructions || "",
-					}
-					
-					await sendSubcontractorNotificationEmail(bookingDataForEmail, assignedSubcontractor)
-					console.log(`📧 Notification sent to subcontractor: ${assignedSubcontractor.email}`)
-				} else {
-					console.warn("⚠️ No subcontractor assigned - check your Google Sheets formulas")
-				}
+					}),
+				})
+				console.log("📊 Google Sheets update triggered via Netlify function")
 			} catch (sheetsError) {
 				console.error("Google Sheets integration error:", sheetsError)
 				// Don't fail the whole webhook if sheets integration fails

@@ -1,0 +1,8 @@
+{
+  "name": "netlify-functions",
+  "version": "1.0.0",
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "resend": "^6.0.1"
+  }
+}
