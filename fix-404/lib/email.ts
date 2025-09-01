@@ -172,3 +172,110 @@ export async function sendCustomerBookingEmail(payload: OwnerBookingEmailPayload
 	await resend.emails.send({ from: fromEmail, to: toEmail, subject, html })
 	return { success: true }
 }
+
+export type SubcontractorInfo = {
+	name: string
+	email: string
+	phone: string
+	specialties: string[]
+}
+
+export type BookingData = {
+	customerName: string
+	customerEmail: string
+	phone: string
+	address: string
+	date: string
+	time: string
+	serviceName: string
+	addons: string[]
+	totalAmount: number
+	currency: string
+	sessionId: string
+	instructions?: string
+}
+
+export async function sendSubcontractorNotificationEmail(
+	booking: BookingData,
+	subcontractor: SubcontractorInfo
+) {
+	if (!resendApiKey) {
+		console.warn("Subcontractor email not sent: RESEND_API_KEY is not configured.")
+		return { skipped: true }
+	}
+
+	const resend = new Resend(resendApiKey)
+	const subject = `🧹 New Job Assignment: ${booking.serviceName} - ${booking.date}`
+	
+	const addonsList = booking.addons && booking.addons.length > 0 ? booking.addons.join(", ") : "None"
+	const total = `${booking.totalAmount.toFixed(2)} ${booking.currency.toUpperCase()}`
+
+	const html = `
+		<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+			<h2 style="color: #0066cc;">🧹 New Job Assignment</h2>
+			<p>Hi ${subcontractor.name},</p>
+			<p>You've been assigned a new cleaning job through our automated system. Please review the details below:</p>
+			
+			<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+				<h3 style="margin-top: 0; color: #333;">📋 Job Details</h3>
+				<table style="width: 100%; border-collapse: collapse;">
+					<tr><td style="padding: 5px 0; font-weight: bold;">Service:</td><td>${booking.serviceName}</td></tr>
+					<tr><td style="padding: 5px 0; font-weight: bold;">Add-ons:</td><td>${addonsList}</td></tr>
+					<tr><td style="padding: 5px 0; font-weight: bold;">Date & Time:</td><td>${booking.date} at ${booking.time}</td></tr>
+					<tr><td style="padding: 5px 0; font-weight: bold;">Total Value:</td><td style="font-weight: bold; color: #0066cc;">${total}</td></tr>
+				</table>
+			</div>
+
+			<div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+				<h3 style="margin-top: 0; color: #333;">👤 Customer Information</h3>
+				<table style="width: 100%; border-collapse: collapse;">
+					<tr><td style="padding: 5px 0; font-weight: bold;">Name:</td><td>${booking.customerName}</td></tr>
+					<tr><td style="padding: 5px 0; font-weight: bold;">Email:</td><td><a href="mailto:${booking.customerEmail}">${booking.customerEmail}</a></td></tr>
+					<tr><td style="padding: 5px 0; font-weight: bold;">Phone:</td><td><a href="tel:${booking.phone}">${booking.phone}</a></td></tr>
+					<tr><td style="padding: 5px 0; font-weight: bold;">Address:</td><td>${booking.address}</td></tr>
+				</table>
+			</div>
+
+			${booking.instructions ? `
+			<div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+				<h4 style="margin-top: 0; color: #856404;">📝 Special Instructions</h4>
+				<p style="margin-bottom: 0;">${booking.instructions}</p>
+			</div>
+			` : ''}
+
+			<div style="background: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0;">
+				<h3 style="margin-top: 0; color: #155724;">✅ Next Steps</h3>
+				<ol style="margin: 0; padding-left: 20px;">
+					<li><strong>Confirm availability</strong> - Reply to this email or call the office</li>
+					<li><strong>Contact customer</strong> if needed for clarifications</li>
+					<li><strong>Arrive on time</strong> with all necessary equipment</li>
+					<li><strong>Complete the service</strong> to our high standards</li>
+					<li><strong>Update job status</strong> when finished</li>
+				</ol>
+			</div>
+
+			<div style="border-top: 1px solid #dee2e6; padding-top: 20px; margin-top: 30px;">
+				<p style="color: #6c757d; font-size: 14px;">
+					<strong>Reference ID:</strong> ${booking.sessionId}<br>
+					<strong>Assigned via:</strong> Round Robin System<br>
+					<strong>Questions?</strong> Contact the office at services@tidymate.ca
+				</p>
+			</div>
+		</div>
+	`
+
+	try {
+		await resend.emails.send({
+			from: fromEmail,
+			to: subcontractor.email,
+			subject,
+			html,
+		})
+		
+		console.log(`✅ Subcontractor notification sent to ${subcontractor.name} (${subcontractor.email})`)
+		return { success: true }
+	} catch (error) {
+		console.error("Failed to send subcontractor notification:", error)
+		throw error
+	}
+}

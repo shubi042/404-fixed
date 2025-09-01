@@ -9,7 +9,6 @@
     "start": "next start"
   },
   "dependencies": {
-    "nodemailer": "^6.9.13",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -46,10 +45,12 @@
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
     "geist": "^1.3.1",
+    "googleapis": "^144.0.0",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "14.2.16",
     "next-themes": "^0.4.4",
+    "nodemailer": "^6.9.13",
     "react": "^18",
     "react-day-picker": "9.8.0",
     "react-dom": "^18",
