@@ -1,4 +1,123 @@
 const nodemailer = require("nodemailer")
+const { google } = require("googleapis")
+
+async function handleGoogleSheetsBooking(bookingData) {
+	try {
+		const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID
+		const SHEET_NAME = process.env.GOOGLE_SHEET_NAME || "Bookings"
+		
+		if (!SPREADSHEET_ID || !process.env.GOOGLE_SHEETS_CREDENTIALS) {
+			console.log("Google Sheets not configured, skipping...")
+			return
+		}
+		
+		const credentials = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS)
+		const auth = new google.auth.GoogleAuth({
+			credentials,
+			scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+		})
+		
+		const sheets = google.sheets({ version: 'v4', auth })
+		
+		// Prepare booking row
+		const bookingRow = [
+			new Date().toISOString(),
+			bookingData.customerName || "",
+			bookingData.serviceName || "",
+			bookingData.date || "",
+			bookingData.time || "",
+			"", // Will be filled by formula
+			"", // Will be filled by formula
+			""  // Will be filled by formula
+		]
+		
+		console.log("📊 Adding booking to Google Sheets...")
+		
+		// Add booking to sheet
+		const appendResult = await sheets.spreadsheets.values.append({
+			spreadsheetId: SPREADSHEET_ID,
+			range: `${SHEET_NAME}!A:H`,
+			valueInputOption: 'USER_ENTERED',
+			requestBody: {
+				values: [bookingRow],
+			},
+		})
+		
+		const updatedRange = appendResult.data.updates?.updatedRange
+		const rowNumber = updatedRange ? parseInt(updatedRange.split(':')[1].replace(/[^\d]/g, '')) : 0
+		
+		console.log(`📍 Booking added to row ${rowNumber}`)
+		
+		// Wait for formulas
+		await new Promise(resolve => setTimeout(resolve, 3000))
+		
+		// Read assignment
+		const readResult = await sheets.spreadsheets.values.get({
+			spreadsheetId: SPREADSHEET_ID,
+			range: `${SHEET_NAME}!F${rowNumber}:G${rowNumber}`,
+		})
+		
+		const subcontractorData = readResult.data.values?.[0]
+		
+		if (subcontractorData && subcontractorData[0] && subcontractorData[1]) {
+			console.log(`👷 Subcontractor assigned: ${subcontractorData[0]}`)
+			
+			// Send subcontractor email via SMTP
+			await sendSubcontractorEmailSMTP(bookingData, {
+				name: subcontractorData[0],
+				email: subcontractorData[1]
+			})
+		}
+		
+	} catch (error) {
+		console.error("Google Sheets integration error:", error)
+	}
+}
+
+async function sendSubcontractorEmailSMTP(booking, subcontractor) {
+	try {
+		const transporter = nodemailer.createTransporter({
+			host: process.env.SMTP_HOST || "mail.privateemail.com",
+			port: Number(process.env.SMTP_PORT || "465"),
+			secure: true,
+			auth: {
+				user: process.env.SMTP_USER,
+				pass: process.env.SMTP_PASS,
+			},
+		})
+		
+		const subject = `🧹 New Job Assignment: ${booking.serviceName} - ${booking.date}`
+		const html = `
+			<h2>🧹 New Job Assignment</h2>
+			<p>Hi ${subcontractor.name},</p>
+			<p>You've been assigned a new cleaning job:</p>
+			
+			<h3>📋 Job Details</h3>
+			<p><strong>Service:</strong> ${booking.serviceName}</p>
+			<p><strong>Date & Time:</strong> ${booking.date} at ${booking.time}</p>
+			<p><strong>Total Value:</strong> $${booking.totalAmount} ${booking.currency}</p>
+			
+			<h3>👤 Customer Information</h3>
+			<p><strong>Name:</strong> ${booking.customerName}</p>
+			<p><strong>Email:</strong> ${booking.customerEmail}</p>
+			<p><strong>Phone:</strong> ${booking.phone}</p>
+			<p><strong>Address:</strong> ${booking.address}</p>
+			
+			<p><strong>Reference:</strong> ${booking.sessionId}</p>
+		`
+		
+		await transporter.sendMail({
+			from: process.env.SMTP_USER,
+			to: subcontractor.email,
+			subject,
+			html,
+		})
+		
+		console.log(`📧 Subcontractor email sent to ${subcontractor.email}`)
+	} catch (error) {
+		console.error("Failed to send subcontractor email:", error)
+	}
+}
 
 exports.handler = async function (event) {
 	// CORS preflight
@@ -59,6 +178,13 @@ exports.handler = async function (event) {
 				<p><strong>Message:</strong><br/>${(body.message || "").replace(/\n/g, "<br/>")}</p>
 			`
 		} else if (type === "booking") {
+			// Handle Google Sheets integration for bookings
+			try {
+				await handleGoogleSheetsBooking(body)
+			} catch (sheetsError) {
+				console.error("Google Sheets error:", sheetsError)
+			}
+			
 			subject = subject || `New Booking: ${body.serviceName || "Cleaning Service"} for ${body.customerName || "Customer"}`
 			html = `
 				<h2>New Booking Received</h2>
