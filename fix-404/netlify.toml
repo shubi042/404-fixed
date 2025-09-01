@@ -1,6 +1,6 @@
 [build]
-  command = "npm run build"
-  publish = ".next"
+  command = "npm run build && cp -r .next/standalone/. .next/deploy && cp -r .next/static .next/deploy/_next/static && cp -r public .next/deploy/public"
+  publish = ".next/deploy"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -8,10 +8,8 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/___netlify-handler"
-  status = 200
+[functions]
+  external_node_modules = ["googleapis", "resend", "stripe"]
 
 [[headers]]
   for = "/*"
