@@ -8,19 +8,15 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-  included_files = ["netlify/functions/node_modules/**"]
-
 [[redirects]]
-  from = "/api/test-sheets"
-  to = "/.netlify/functions/test-sheets"
+  from = "/api/*"
+  to = "/.netlify/functions/___netlify-handler"
   status = 200
+  force = true
 
 [[redirects]]
-  from = "/api/zapier-webhook"
-  to = "/.netlify/functions/zapier-webhook"
+  from = "/*"
+  to = "/index.html"
   status = 200
 
 [[headers]]
