@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Sheets Test</title>
+</head>
+<body>
+    <h1>Testing Google Sheets Integration</h1>
+    <button onclick="testGoogleSheets()">Test Google Sheets</button>
+    <div id="result"></div>
+
+    <script>
+    async function testGoogleSheets() {
+        const result = document.getElementById('result');
+        result.innerHTML = 'Testing...';
+        
+        try {
+            // Test the API endpoint
+            const response = await fetch('/api/test-google-sheets-direct');
+            const data = await response.json();
+            
+            result.innerHTML = `
+                <h3>Test Result:</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+                <p>Status: ${response.status}</p>
+            `;
+        } catch (error) {
+            result.innerHTML = `
+                <h3>Error:</h3>
+                <p>${error.message}</p>
+            `;
+        }
+    }
+    </script>
+</body>
+</html>
