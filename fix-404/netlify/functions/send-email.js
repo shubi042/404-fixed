@@ -76,7 +76,7 @@ async function handleGoogleSheetsBooking(bookingData) {
 
 async function sendSubcontractorEmailSMTP(booking, subcontractor) {
 	try {
-		const transporter = nodemailer.createTransporter({
+		const transporter = nodemailer.createTransport({
 			host: process.env.SMTP_HOST || "mail.privateemail.com",
 			port: Number(process.env.SMTP_PORT || "465"),
 			secure: true,
