@@ -17,6 +17,20 @@ async function sendOwnerViaFunction(baseUrl: string, payload: any) {
 	}
 }
 
+async function triggerZapierAssignment(payload: any) {
+	try {
+		const zapierWebhookUrl = process.env.ZAPIER_ASSIGNMENT_WEBHOOK_URL
+		if (!zapierWebhookUrl) return
+		await fetch(zapierWebhookUrl, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(payload),
+		})
+	} catch (e) {
+		console.error("Zapier trigger failed:", e)
+	}
+}
+
 export async function POST(request: NextRequest) {
 	try {
 		const stripeSecretKey = process.env.STRIPE_SECRET_KEY
@@ -69,6 +83,7 @@ export async function POST(request: NextRequest) {
 
 		const origin = request.headers.get("origin") || new URL(request.url).origin
 		sendOwnerViaFunction(origin, ownerPayload)
+		triggerZapierAssignment(ownerPayload)
 
 		return NextResponse.json({ ok: true })
 	} catch (error: any) {

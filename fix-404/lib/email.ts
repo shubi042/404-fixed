@@ -3,8 +3,7 @@ import { Resend } from "resend"
 const resendApiKey = process.env.RESEND_API_KEY
 const ownerEmail = process.env.OWNER_NOTIFICATION_EMAIL || "services@tidymate.ca"
 const fromEmail = process.env.FROM_EMAIL || "noreply@tidymate.ca"
-const calendlyUsername = process.env.NEXT_PUBLIC_CALENDLY_USERNAME || "services-tidymate"
-const calendlyConfirmationUrl = process.env.CALENDLY_CONFIRMATION_URL || `https://calendly.com/${calendlyUsername}/booking-confirmation`
+// Calendly removed from workflow
 
 export type OwnerBookingEmailPayload = {
 	customerName: string
@@ -35,14 +34,7 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
 		: "(total shown in Stripe)"
 
 	const html = `
-		<h2>🎉 New Booking Received - Action Required</h2>
-		<div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
-			<h3>📅 CALENDLY ACTION NEEDED:</h3>
-			<p><strong>Send this link to customer to confirm their exact time slot:</strong></p>
-			<p><a href="${calendlyConfirmationUrl}" style="background: #0066cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Customer Calendly Booking Link</a></p>
-			<p><em>Send this link to customer via email or text</em></p>
-		</div>
-		
+		<h2>🎉 New Booking Received</h2>
 		<h3>Booking Details:</h3>
 		<p><strong>Service:</strong> ${payload.serviceName}</p>
 		<p><strong>Add-ons:</strong> ${addonsList}</p>
@@ -57,16 +49,11 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload) {
 		<p><strong>Requested Date & Time:</strong> ${payload.date} at ${payload.time}</p>
 		
 		<hr style="margin: 20px 0;"/>
-		<h3>📋 Your Action Items:</h3>
+		<h3>📋 Next Steps:</h3>
 		<ol>
-			<li><strong>Send Calendly link above to customer</strong> - They'll pick exact time slot</li>
-			<li><strong>You'll get Calendly notification</strong> when they book</li>
+			<li><strong>Automation will assign a subcontractor</strong> based on availability</li>
 			<li><strong>Confirm service availability</strong> and send final details</li>
 		</ol>
-		
-		<div style="background: #f0f9ff; padding: 10px; border-radius: 5px; margin-top: 15px;">
-			<p><strong>💡 Pro Tip:</strong> All customer bookings through Calendly will automatically appear in your calendar at calendly.com/${calendlyUsername}!</p>
-		</div>
 	`
 
 	await resend.emails.send({
@@ -143,8 +130,8 @@ export async function sendCustomerBookingEmail(payload: OwnerBookingEmailPayload
 		<p>Your booking is confirmed and payment has been processed successfully!</p>
 		
 		<div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 15px 0;">
-			<h3>📅 Next Step: Choose Your Exact Time Slot</h3>
-			<p>You'll receive a <strong>Calendly booking link</strong> from us within 2 hours to select your preferred time slot.</p>
+			<h3>📋 What's Next</h3>
+			<p>We're assigning a professional subcontractor to your booking based on availability. You'll receive a confirmation with the appointment details shortly.</p>
 		</div>
 		
 		<h3>Your Booking Details:</h3>
