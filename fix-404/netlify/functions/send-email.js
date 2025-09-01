@@ -1,98 +1,129 @@
 const nodemailer = require("nodemailer")
-const { google } = require("googleapis")
+const https = require("https")
 
 async function handleGoogleSheetsBooking(bookingData) {
 	try {
-		console.log("🔍 Starting Google Sheets integration...")
+		console.log("🔍 Using Google Sheets REST API directly...")
 		
 		const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID
 		const SHEET_NAME = process.env.GOOGLE_SHEET_NAME || "Bookings"
-		
-		console.log("📊 Config check:", {
-			hasSpreadsheetId: !!SPREADSHEET_ID,
-			hasCredentials: !!process.env.GOOGLE_SHEETS_CREDENTIALS,
-			sheetName: SHEET_NAME
-		})
 		
 		if (!SPREADSHEET_ID || !process.env.GOOGLE_SHEETS_CREDENTIALS) {
 			console.log("❌ Google Sheets not configured, skipping...")
 			return
 		}
 		
-		console.log("🔑 Parsing credentials...")
 		const credentials = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS)
-		console.log("✅ Credentials parsed, client_email:", credentials.client_email)
 		
-		const auth = new google.auth.GoogleAuth({
-			credentials,
-			scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+		// Get OAuth token using service account
+		const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+				assertion: createJWT(credentials)
+			})
 		})
 		
-		console.log("📊 Creating sheets client...")
-		const sheets = google.sheets({ version: 'v4', auth })
+		const tokenData = await tokenResponse.json()
+		const accessToken = tokenData.access_token
 		
-		// Prepare booking row
-		const bookingRow = [
+		if (!accessToken) {
+			throw new Error('Failed to get access token')
+		}
+		
+		console.log("✅ Got access token")
+		
+		// Prepare booking data
+		const values = [[
 			new Date().toISOString(),
 			bookingData.customerName || "",
 			bookingData.serviceName || "",
 			bookingData.date || "",
 			bookingData.time || "",
-			"", // Will be filled by formula
-			"", // Will be filled by formula
-			""  // Will be filled by formula
-		]
+			"", // Formula will fill
+			"", // Formula will fill
+			""  // Formula will fill
+		]]
 		
-		console.log("📊 Adding booking to Google Sheets...")
+		// Add to Google Sheets using REST API
+		const appendUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}!A:H:append?valueInputOption=USER_ENTERED`
 		
-		console.log("📝 Adding booking to sheet...")
-		
-		// Add booking to sheet
-		const appendResult = await sheets.spreadsheets.values.append({
-			spreadsheetId: SPREADSHEET_ID,
-			range: `${SHEET_NAME}!A:H`,
-			valueInputOption: 'USER_ENTERED',
-			requestBody: {
-				values: [bookingRow],
+		const appendResponse = await fetch(appendUrl, {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${accessToken}`,
+				'Content-Type': 'application/json'
 			},
+			body: JSON.stringify({ values })
 		})
 		
-		const updatedRange = appendResult.data.updates?.updatedRange
-		const rowNumber = updatedRange ? parseInt(updatedRange.split(':')[1].replace(/[^\d]/g, '')) : 0
+		const appendData = await appendResponse.json()
+		console.log("📊 Append response:", appendData)
 		
-		console.log(`✅ Booking added to row ${rowNumber}`)
-		
-		// Wait for formulas
-		console.log("⏳ Waiting for formulas to calculate...")
-		await new Promise(resolve => setTimeout(resolve, 4000))
-		
-		// Read assignment
-		console.log("📖 Reading subcontractor assignment...")
-		const readResult = await sheets.spreadsheets.values.get({
-			spreadsheetId: SPREADSHEET_ID,
-			range: `${SHEET_NAME}!F${rowNumber}:G${rowNumber}`,
-		})
-		
-		const subcontractorData = readResult.data.values?.[0]
-		console.log("📋 Assignment data:", subcontractorData)
-		
-		if (subcontractorData && subcontractorData[0] && subcontractorData[1]) {
-			console.log(`🎯 Subcontractor assigned: ${subcontractorData[0]}`)
+		if (appendData.updates) {
+			const updatedRange = appendData.updates.updatedRange
+			const rowNumber = updatedRange ? parseInt(updatedRange.split(':')[1].replace(/[^\d]/g, '')) : 0
 			
-			// Send subcontractor email via SMTP
-			console.log("📧 Sending subcontractor notification...")
-			await sendSubcontractorEmailSMTP(bookingData, {
-				name: subcontractorData[0],
-				email: subcontractorData[1]
+			console.log(`✅ Booking added to row ${rowNumber}`)
+			
+			// Wait for formulas
+			console.log("⏳ Waiting for formulas...")
+			await new Promise(resolve => setTimeout(resolve, 4000))
+			
+			// Read assignment
+			const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_NAME}!F${rowNumber}:G${rowNumber}`
+			
+			const readResponse = await fetch(readUrl, {
+				headers: { 'Authorization': `Bearer ${accessToken}` }
 			})
-			console.log("✅ Subcontractor notification sent!")
-		} else {
-			console.log("⚠️ No subcontractor assigned - check formulas")
+			
+			const readData = await readResponse.json()
+			const subcontractorData = readData.values?.[0]
+			
+			if (subcontractorData && subcontractorData[0] && subcontractorData[1]) {
+				console.log(`🎯 Subcontractor assigned: ${subcontractorData[0]}`)
+				
+				// Send subcontractor email
+				await sendSubcontractorEmailSMTP(bookingData, {
+					name: subcontractorData[0],
+					email: subcontractorData[1]
+				})
+				console.log("✅ Subcontractor notification sent!")
+			}
 		}
 		
 	} catch (error) {
 		console.error("Google Sheets integration error:", error)
 	}
+}
+
+function createJWT(credentials) {
+	const header = {
+		alg: 'RS256',
+		typ: 'JWT'
+	}
+	
+	const now = Math.floor(Date.now() / 1000)
+	const payload = {
+		iss: credentials.client_email,
+		scope: 'https://www.googleapis.com/auth/spreadsheets',
+		aud: 'https://oauth2.googleapis.com/token',
+		exp: now + 3600,
+		iat: now
+	}
+	
+	// Simple JWT creation (for production, use a proper JWT library)
+	const crypto = require('crypto')
+	const headerB64 = Buffer.from(JSON.stringify(header)).toString('base64url')
+	const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url')
+	const signatureInput = `${headerB64}.${payloadB64}`
+	
+	const privateKey = credentials.private_key
+	const signature = crypto.sign('RSA-SHA256', Buffer.from(signatureInput), privateKey)
+	const signatureB64 = signature.toString('base64url')
+	
+	return `${headerB64}.${payloadB64}.${signatureB64}`
 }
 
 async function sendSubcontractorEmailSMTP(booking, subcontractor) {
