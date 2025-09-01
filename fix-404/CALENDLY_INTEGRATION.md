@@ -89,16 +89,48 @@ TidyMate Team
 
 ## Technical Implementation
 
-The system includes:
-- ✅ Calendly widget embedded in booking page
-- ✅ Two booking methods (instant vs consultation)
-- ✅ Email notifications mentioning Calendly confirmation
-- ✅ Contact form sending to business email (services@tidymate.ca)
-- ✅ Updated success page with Calendly workflow
+### ✅ Current Features:
+- **Enhanced Calendly Widget Component** (`/components/calendly-widget.tsx`)
+  - Responsive design with loading states
+  - Popup and inline embed options
+  - Automatic prefill with customer data
+  - Event scheduling callbacks
+- **Dual Booking Methods** on main booking page
+  - Instant booking with immediate payment
+  - Consultation booking via Calendly
+- **Success Page Integration** 
+  - Immediate Calendly scheduling option
+  - Both popup and inline calendar widgets
+  - Automatic customer data prefill
+- **Calendly Webhook Handler** (`/api/calendly-webhook`)
+  - Automatic email notifications for new bookings
+  - Cancellation handling
+  - Business owner and customer notifications
+- **Calendly API Integration** (`/lib/calendly.ts`)
+  - Programmatic event management
+  - Webhook setup utilities
+  - Event type and booking retrieval
+- **Admin Dashboard Component** (`/components/calendly-admin.tsx`)
+  - Real-time booking overview
+  - Event type management
+  - Integration status monitoring
+
+### 🔄 Automated Workflows:
+1. **Instant Booking Flow:**
+   - Customer pays → Success page → Immediate Calendly scheduling option
+   - Automatic email with Calendly link
+   - Webhook notifications for both parties
+
+2. **Consultation Flow:**
+   - Customer selects consultation → Direct Calendly booking
+   - Automatic confirmation emails
+   - Follow-up booking after consultation
 
 ## Environment Variables
 
-Make sure these are set:
+Make sure these are set for full Calendly integration:
+
+### Required Variables:
 ```
 RESEND_API_KEY=your_resend_api_key
 OWNER_NOTIFICATION_EMAIL=services@tidymate.ca
@@ -106,13 +138,60 @@ CONTACT_TO_EMAIL=services@tidymate.ca
 FROM_EMAIL=noreply@tidymate.ca
 ```
 
+### Optional (for advanced features):
+```
+CALENDLY_ACCESS_TOKEN=your_calendly_personal_access_token
+CALENDLY_WEBHOOK_SECRET=your_webhook_signing_secret
+```
+
+### Getting Calendly API Credentials:
+
+#### Personal Access Token:
+1. Go to [Calendly Developer Portal](https://developer.calendly.com/)
+2. Sign in with your Calendly account
+3. Navigate to "Personal Access Tokens"
+4. Create a new token with the following scopes:
+   - `read:user`
+   - `read:event_types`
+   - `read:scheduled_events`
+   - `read:invitees`
+   - `write:webhook_subscriptions`
+5. Copy the token and add it to your environment variables
+
+#### Webhook Secret (Optional):
+1. When setting up webhooks, Calendly provides a signing secret
+2. Use this to verify webhook authenticity in production
+3. Add it to your environment variables for security
+
 ## Next Steps
 
-1. Set up your Calendly account and event types
-2. Update the Calendly URL in the code
-3. Test the integration with a test booking
-4. Train your team on the new workflow
-5. Consider setting up Calendly webhooks for automatic sync
+### Immediate Setup (Required):
+1. ✅ Calendly account already configured: `services-tidymate`
+2. ✅ Event types created and active
+3. ✅ Website integration implemented
+4. 🔄 Test the integration with a test booking
+
+### Advanced Features (Optional):
+1. **API Integration**: Add `CALENDLY_ACCESS_TOKEN` to environment variables for:
+   - Real-time booking data
+   - Automatic webhook setup
+   - Admin dashboard functionality
+   
+2. **Webhook Security**: Add `CALENDLY_WEBHOOK_SECRET` for:
+   - Webhook signature verification
+   - Enhanced security
+   
+3. **Custom Branding**: Customize Calendly appearance in your account:
+   - Match TidyMate brand colors
+   - Add custom questions
+   - Set business hours and availability
+
+### Testing Checklist:
+- [ ] Test consultation booking from homepage
+- [ ] Test instant booking → Calendly scheduling flow
+- [ ] Verify email notifications are sent
+- [ ] Check webhook notifications (if API token configured)
+- [ ] Test popup and inline calendar widgets
 
 ## Support
 
