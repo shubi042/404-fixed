@@ -3,20 +3,32 @@ const { google } = require("googleapis")
 
 async function handleGoogleSheetsBooking(bookingData) {
 	try {
+		console.log("🔍 Starting Google Sheets integration...")
+		
 		const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID
 		const SHEET_NAME = process.env.GOOGLE_SHEET_NAME || "Bookings"
 		
+		console.log("📊 Config check:", {
+			hasSpreadsheetId: !!SPREADSHEET_ID,
+			hasCredentials: !!process.env.GOOGLE_SHEETS_CREDENTIALS,
+			sheetName: SHEET_NAME
+		})
+		
 		if (!SPREADSHEET_ID || !process.env.GOOGLE_SHEETS_CREDENTIALS) {
-			console.log("Google Sheets not configured, skipping...")
+			console.log("❌ Google Sheets not configured, skipping...")
 			return
 		}
 		
+		console.log("🔑 Parsing credentials...")
 		const credentials = JSON.parse(process.env.GOOGLE_SHEETS_CREDENTIALS)
+		console.log("✅ Credentials parsed, client_email:", credentials.client_email)
+		
 		const auth = new google.auth.GoogleAuth({
 			credentials,
 			scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 		})
 		
+		console.log("📊 Creating sheets client...")
 		const sheets = google.sheets({ version: 'v4', auth })
 		
 		// Prepare booking row
@@ -33,6 +45,8 @@ async function handleGoogleSheetsBooking(bookingData) {
 		
 		console.log("📊 Adding booking to Google Sheets...")
 		
+		console.log("📝 Adding booking to sheet...")
+		
 		// Add booking to sheet
 		const appendResult = await sheets.spreadsheets.values.append({
 			spreadsheetId: SPREADSHEET_ID,
@@ -46,27 +60,34 @@ async function handleGoogleSheetsBooking(bookingData) {
 		const updatedRange = appendResult.data.updates?.updatedRange
 		const rowNumber = updatedRange ? parseInt(updatedRange.split(':')[1].replace(/[^\d]/g, '')) : 0
 		
-		console.log(`📍 Booking added to row ${rowNumber}`)
+		console.log(`✅ Booking added to row ${rowNumber}`)
 		
 		// Wait for formulas
-		await new Promise(resolve => setTimeout(resolve, 3000))
+		console.log("⏳ Waiting for formulas to calculate...")
+		await new Promise(resolve => setTimeout(resolve, 4000))
 		
 		// Read assignment
+		console.log("📖 Reading subcontractor assignment...")
 		const readResult = await sheets.spreadsheets.values.get({
 			spreadsheetId: SPREADSHEET_ID,
 			range: `${SHEET_NAME}!F${rowNumber}:G${rowNumber}`,
 		})
 		
 		const subcontractorData = readResult.data.values?.[0]
+		console.log("📋 Assignment data:", subcontractorData)
 		
 		if (subcontractorData && subcontractorData[0] && subcontractorData[1]) {
-			console.log(`👷 Subcontractor assigned: ${subcontractorData[0]}`)
+			console.log(`🎯 Subcontractor assigned: ${subcontractorData[0]}`)
 			
 			// Send subcontractor email via SMTP
+			console.log("📧 Sending subcontractor notification...")
 			await sendSubcontractorEmailSMTP(bookingData, {
 				name: subcontractorData[0],
 				email: subcontractorData[1]
 			})
+			console.log("✅ Subcontractor notification sent!")
+		} else {
+			console.log("⚠️ No subcontractor assigned - check formulas")
 		}
 		
 	} catch (error) {
