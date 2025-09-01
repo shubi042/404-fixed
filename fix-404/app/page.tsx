@@ -1,9 +1,14 @@
+"use client"
+
 import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { useCalendly } from "@/components/calendly-widget"
 import Link from "next/link"
 
 export default function HomePage() {
+  const { openPopup } = useCalendly()
+  
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -25,10 +30,18 @@ export default function HomePage() {
                 <Link href="/booking">Book Now</Link>
               </Button>
               <Button
-                asChild
+                onClick={() => openPopup('https://calendly.com/services-tidymate/30min')}
                 size="lg"
                 variant="outline"
                 className="text-lg px-8 py-3 border-white text-white hover:bg-white hover:text-primary bg-transparent"
+              >
+                📅 Free Consultation
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="ghost"
+                className="text-lg px-8 py-3 text-white hover:bg-white/10"
               >
                 <Link href="/services">View Services</Link>
               </Button>

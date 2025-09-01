@@ -2,6 +2,7 @@
 
 import { Navigation } from "@/components/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CalendlyWidget } from "@/components/calendly-widget"
 
 export default function ConsultationPage() {
   return (
@@ -24,18 +25,14 @@ export default function ConsultationPage() {
             </p>
           </CardHeader>
           <CardContent>
-            {/* Calendly Widget */}
-            <div className="w-full">
-              <iframe
-                src="https://calendly.com/services-tidymate/30min?embed_domain=${typeof window !== 'undefined' ? window.location.hostname : ''}&embed_type=Inline&hide_event_type_details=1&hide_gdpr_banner=1&primary_color=000000&text_color=4d4d4d"
-                width="100%"
-                height="700"
-                frameBorder="0"
-                scrolling="no"
-                className="rounded-lg"
-                title="Schedule a consultation with TidyMate"
-              />
-            </div>
+            {/* Enhanced Calendly Widget */}
+            <CalendlyWidget
+              url="https://calendly.com/services-tidymate/30min"
+              onEventScheduled={(event) => {
+                console.log('Consultation scheduled:', event)
+                // You can add analytics tracking or other actions here
+              }}
+            />
             
             <div className="mt-6 p-4 bg-muted/50 rounded-lg">
               <h3 className="font-semibold mb-2">What happens next?</h3>

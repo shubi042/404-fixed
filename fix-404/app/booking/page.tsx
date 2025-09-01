@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { loadStripe } from "@stripe/stripe-js"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { CalendlyWidget, useCalendly } from "@/components/calendly-widget"
+import Link from "next/link"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -29,6 +31,8 @@ export default function BookingPage() {
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [pricingMode, setPricingMode] = useState<"flat">("flat")
+  const [bookingMethod, setBookingMethod] = useState<"instant" | "consultation">("instant")
+  const { openPopup } = useCalendly()
 
   const servicePricing = {
     // Airbnb Cleaning Services
@@ -215,15 +219,81 @@ export default function BookingPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-foreground mb-4">Book Your Professional Cleaning Service</h1>
-          <p className="text-xl text-muted-foreground">
+          <p className="text-xl text-muted-foreground mb-8">
             Professional cleaning services in Toronto with transparent flat-rate pricing.
           </p>
+          
+          {/* Booking Method Selection */}
+          <Card className="max-w-2xl mx-auto mb-8">
+            <CardHeader>
+              <CardTitle className="text-lg">Choose Your Booking Method</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup
+                value={bookingMethod}
+                onValueChange={(value) => setBookingMethod(value as "instant" | "consultation")}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              >
+                <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="instant" id="instant" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="instant" className="cursor-pointer font-medium">
+                      🚀 Instant Booking & Payment
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Book and pay now, then schedule your exact time slot via Calendly
+                    </p>
+                    <div className="text-xs text-green-600 font-medium mt-2">
+                      ✓ Secure payment ✓ Immediate confirmation ✓ Flexible scheduling
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                  <RadioGroupItem value="consultation" id="consultation" className="mt-1" />
+                  <div className="flex-1">
+                    <Label htmlFor="consultation" className="cursor-pointer font-medium">
+                      💬 Free Consultation First
+                    </Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Schedule a call to discuss your needs and get a custom quote
+                    </p>
+                    <div className="text-xs text-blue-600 font-medium mt-2">
+                      ✓ Personalized quote ✓ Custom solutions ✓ No upfront payment
+                    </div>
+                  </div>
+                </div>
+              </RadioGroup>
+              
+              {bookingMethod === "consultation" && (
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="font-semibold text-blue-900 mb-2">Ready to schedule your consultation?</h3>
+                  <p className="text-blue-800 text-sm mb-4">
+                    Click below to access our calendar and book a free 30-minute consultation call.
+                  </p>
+                  <div className="flex gap-3">
+                    <Button 
+                      onClick={() => openPopup('https://calendly.com/services-tidymate/30min')}
+                      className="flex-1"
+                    >
+                      📅 Schedule Consultation (Popup)
+                    </Button>
+                    <Button asChild variant="outline" className="flex-1">
+                      <Link href="/consultation">
+                        📋 Full Consultation Page
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Booking Form */}
-          <div className="lg:col-span-2">
-            <Card>
+        {bookingMethod === "instant" && (
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Booking Form */}
+            <div className="lg:col-span-2">
+              <Card>
               <CardHeader>
                 <CardTitle>Service Selection & Details</CardTitle>
               </CardHeader>
@@ -511,6 +581,19 @@ export default function BookingPage() {
             </Card>
           </div>
         </div>
+        )}
+
+        {bookingMethod === "consultation" && (
+          <div className="max-w-3xl mx-auto">
+            <CalendlyWidget
+              url="https://calendly.com/services-tidymate/30min"
+              onEventScheduled={(event) => {
+                console.log('Consultation scheduled from booking page:', event)
+              }}
+              className="mb-8"
+            />
+          </div>
+        )}
       </div>
 
       <footer className="bg-primary text-primary-foreground py-12 mt-20">

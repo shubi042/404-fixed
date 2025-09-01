@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Navigation } from "@/components/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { CalendlyWidget, useCalendly } from "@/components/calendly-widget"
 import Link from "next/link"
 
 export default function BookingSuccessPage() {
@@ -12,6 +13,8 @@ export default function BookingSuccessPage() {
   const sessionId = searchParams.get("session_id")
   const [bookingDetails, setBookingDetails] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [showCalendly, setShowCalendly] = useState(false)
+  const { openPopup } = useCalendly()
 
   useEffect(() => {
     if (sessionId) {
@@ -111,7 +114,7 @@ export default function BookingSuccessPage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-primary mr-2">2.</span>
-                  <span>📅 Check your email - we've automatically sent you a Calendly link to choose your exact time slot</span>
+                  <span>📅 Schedule your exact time slot using the button below or the link in your email</span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-primary mr-2">3.</span>
@@ -123,6 +126,73 @@ export default function BookingSuccessPage() {
                 </li>
               </ul>
             </div>
+
+            {/* Immediate Calendly Scheduling */}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h3 className="font-semibold text-blue-900 mb-3">🎯 Schedule Your Time Slot Now</h3>
+              <p className="text-blue-800 text-sm mb-4">
+                Skip the email wait! Schedule your cleaning appointment right now by choosing your preferred time slot.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                  onClick={() => setShowCalendly(true)}
+                  className="flex-1"
+                  size="lg"
+                >
+                  📅 Choose Your Time Slot
+                </Button>
+                <Button 
+                  onClick={() => openPopup(
+                    'https://calendly.com/services-tidymate/booking-confirmation',
+                    {
+                      prefill: {
+                        name: bookingDetails?.customerName,
+                        email: bookingDetails?.customerEmail
+                      },
+                      utm: {
+                        utmCampaign: 'TidyMate Booking Success',
+                        utmSource: 'success_page',
+                        utmMedium: 'popup'
+                      }
+                    }
+                  )}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  🚀 Quick Schedule (Popup)
+                </Button>
+              </div>
+            </div>
+
+            {/* Inline Calendly Widget */}
+            {showCalendly && (
+              <div className="mt-6">
+                <CalendlyWidget
+                  url="https://calendly.com/services-tidymate/booking-confirmation"
+                  prefill={{
+                    name: bookingDetails?.customerName,
+                    email: bookingDetails?.customerEmail,
+                    customAnswers: {
+                      '1': bookingDetails?.service || '',
+                      '2': `Payment ID: ${sessionId}`,
+                      '3': bookingDetails?.address || ''
+                    }
+                  }}
+                  onEventScheduled={(event) => {
+                    console.log('Event scheduled:', event)
+                    // You could trigger additional actions here
+                  }}
+                />
+                <div className="text-center mt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowCalendly(false)}
+                  >
+                    Hide Calendar
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {bookingDetails && (
               <div className="border-t pt-4">
