@@ -82,6 +82,8 @@ export async function POST(request: NextRequest) {
 				totalAmountCents: typeof sessionWithLineItems.amount_total === "number" ? sessionWithLineItems.amount_total : undefined,
 				currency: sessionWithLineItems.currency || undefined,
 				sessionId: sessionWithLineItems.id,
+				bookedAt: new Date().toISOString(),
+				paymentStatus: sessionWithLineItems.payment_status || "paid"
 			}
 
 			await sendOwnerBookingEmail(ownerPayload)

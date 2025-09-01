@@ -16,6 +16,9 @@ FROM_EMAIL=noreply@tidymate.ca
 # Stripe Configuration (if using payments)
 STRIPE_SECRET_KEY=sk_xxxxxxxxxxxxxxxxx
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_xxxxxxxxxxxxxxxxx
+
+# Zapier Assignment Hook
+ZAPIER_ASSIGNMENT_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/xxxxxxxx/xxxxxxxx
 ```
 
 ## **HOW TO ADD:**
