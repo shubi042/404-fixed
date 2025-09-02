@@ -96,6 +96,91 @@ export async function POST(request: NextRequest) {
     
     if (response.ok) {
       console.log("✅ Successfully added to Google Sheets")
+      
+      // Get the row number that was added
+      const rowNumber = result.updates?.updatedRange ? 
+        parseInt(result.updates.updatedRange.split(':')[1].replace(/[^\d]/g, '')) : 0
+      
+      if (rowNumber) {
+        console.log(`📍 Booking added to row ${rowNumber}`)
+        
+        // Wait for formulas to calculate
+        console.log("⏳ Waiting for round-robin formulas to calculate...")
+        await new Promise(resolve => setTimeout(resolve, 4000))
+        
+        // Read the assigned subcontractor
+        const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Bookings!F${rowNumber}:G${rowNumber}`
+        
+        const readResponse = await fetch(readUrl, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+        
+        const readData = await readResponse.json()
+        const subcontractorData = readData.values?.[0]
+        
+        if (subcontractorData && subcontractorData[0] && subcontractorData[1]) {
+          console.log(`🎯 Subcontractor assigned: ${subcontractorData[0]}`)
+          console.log(`📧 Email: ${subcontractorData[1]}`)
+          
+          // Send subcontractor notification email
+          try {
+            const emailResponse = await fetch('https://tidymate.ca/.netlify/functions/send-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'subcontractor',
+                to: subcontractorData[1],
+                subcontractorName: subcontractorData[0],
+                customerName: bookingData.customerName,
+                customerEmail: bookingData.customerEmail,
+                phone: bookingData.phone,
+                address: bookingData.address,
+                date: bookingData.date,
+                time: bookingData.time,
+                serviceName: bookingData.serviceName,
+                totalAmount: bookingData.totalAmount,
+                currency: bookingData.currency,
+                sessionId: bookingData.sessionId,
+                instructions: bookingData.instructions
+              })
+            })
+            
+            if (emailResponse.ok) {
+              console.log(`✅ Subcontractor notification sent to ${subcontractorData[1]}`)
+            } else {
+              console.error("❌ Failed to send subcontractor email")
+            }
+          } catch (emailError) {
+            console.error("Email sending error:", emailError)
+          }
+          
+          return NextResponse.json({
+            success: true,
+            message: "Booking processed successfully",
+            result: {
+              ...result,
+              assignedSubcontractor: {
+                name: subcontractorData[0],
+                email: subcontractorData[1]
+              },
+              rowNumber,
+              emailSent: true
+            }
+          })
+        } else {
+          console.log("⚠️ No subcontractor assigned - check your formulas in columns F & G")
+          return NextResponse.json({
+            success: true,
+            message: "Booking added but no subcontractor assigned",
+            result: {
+              ...result,
+              rowNumber,
+              warning: "Check round-robin formulas in columns F & G"
+            }
+          })
+        }
+      }
+      
       return NextResponse.json({
         success: true,
         message: "Booking added to Google Sheets",

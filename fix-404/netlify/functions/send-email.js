@@ -250,6 +250,55 @@ exports.handler = async function (event) {
 				<p><strong>Preferred Date & Time:</strong> ${body.date || ""} ${body.time ? "at " + body.time : ""}</p>
 				<p><strong>Stripe Session:</strong> ${body.sessionId || ""}</p>
 			`
+		} else if (type === "subcontractor") {
+			// Subcontractor job notification email
+			to = body.to
+			subject = `🧹 New Job Assignment: ${body.serviceName} - ${body.date}`
+			html = `
+				<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+					<h2 style="color: #0066cc;">🧹 New Job Assignment</h2>
+					<p>Hi ${body.subcontractorName},</p>
+					<p>You've been assigned a new cleaning job through our automated system:</p>
+					
+					<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+						<h3 style="margin-top: 0; color: #333;">📋 Job Details</h3>
+						<p><strong>Service:</strong> ${body.serviceName}</p>
+						<p><strong>Date & Time:</strong> ${body.date} at ${body.time}</p>
+						<p><strong>Total Value:</strong> $${body.totalAmount} ${body.currency}</p>
+					</div>
+
+					<div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+						<h3 style="margin-top: 0; color: #333;">👤 Customer Information</h3>
+						<p><strong>Name:</strong> ${body.customerName}</p>
+						<p><strong>Email:</strong> <a href="mailto:${body.customerEmail}">${body.customerEmail}</a></p>
+						<p><strong>Phone:</strong> <a href="tel:${body.phone}">${body.phone}</a></p>
+						<p><strong>Address:</strong> ${body.address}</p>
+					</div>
+
+					${body.instructions ? `
+					<div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+						<h4 style="margin-top: 0; color: #856404;">📝 Special Instructions</h4>
+						<p>${body.instructions}</p>
+					</div>
+					` : ''}
+
+					<div style="background: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0;">
+						<h3 style="margin-top: 0; color: #155724;">✅ Next Steps</h3>
+						<ol>
+							<li><strong>Confirm availability</strong> - Reply to this email</li>
+							<li><strong>Contact customer</strong> if needed for clarifications</li>
+							<li><strong>Arrive on time</strong> with all necessary equipment</li>
+							<li><strong>Complete the service</strong> to our high standards</li>
+						</ol>
+					</div>
+
+					<p style="color: #6c757d; font-size: 14px;">
+						<strong>Reference ID:</strong> ${body.sessionId}<br>
+						<strong>Assigned via:</strong> Round Robin System<br>
+						<strong>Questions?</strong> Contact services@tidymate.ca
+					</p>
+				</div>
+			`
 		} else {
 			return { statusCode: 400, body: JSON.stringify({ error: "Invalid type" }) }
 		}
