@@ -1,21 +1,9 @@
 [build]
-  command = "npm install --legacy-peer-deps && npm run build"
+  command = "npm install && npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18"
-  NPM_CONFIG_PRODUCTION = "false"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-  
-[functions]
-  external_node_modules = ["googleapis"]
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
