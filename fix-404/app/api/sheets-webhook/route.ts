@@ -122,33 +122,48 @@ export async function POST(request: NextRequest) {
           console.log(`🎯 Subcontractor assigned: ${subcontractorData[0]}`)
           console.log(`📧 Email: ${subcontractorData[1]}`)
           
-          // Send subcontractor notification email
+          // Send subcontractor notification email using Resend
           try {
-            const emailResponse = await fetch('https://tidymate.ca/.netlify/functions/send-email', {
+            const emailResponse = await fetch('https://tidymate.ca/api/test-email', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                type: 'subcontractor',
                 to: subcontractorData[1],
-                subcontractorName: subcontractorData[0],
-                customerName: bookingData.customerName,
-                customerEmail: bookingData.customerEmail,
-                phone: bookingData.phone,
-                address: bookingData.address,
-                date: bookingData.date,
-                time: bookingData.time,
-                serviceName: bookingData.serviceName,
-                totalAmount: bookingData.totalAmount,
-                currency: bookingData.currency,
-                sessionId: bookingData.sessionId,
-                instructions: bookingData.instructions
+                subject: `🧹 New Job Assignment: ${bookingData.serviceName} - ${bookingData.date}`,
+                message: `Hi ${subcontractorData[0]},
+
+You've been assigned a new cleaning job:
+
+📋 JOB DETAILS:
+Service: ${bookingData.serviceName}
+Date & Time: ${bookingData.date} at ${bookingData.time}
+Total Value: $${bookingData.totalAmount} ${bookingData.currency}
+
+👤 CUSTOMER INFORMATION:
+Name: ${bookingData.customerName}
+Email: ${bookingData.customerEmail}
+Phone: ${bookingData.phone}
+Address: ${bookingData.address}
+
+${bookingData.instructions ? `📝 SPECIAL INSTRUCTIONS: ${bookingData.instructions}` : ''}
+
+✅ NEXT STEPS:
+1. Confirm availability - Reply to this email
+2. Contact customer if needed
+3. Arrive on time with equipment
+4. Complete service to high standards
+
+Reference ID: ${bookingData.sessionId}
+Assigned via: Round Robin System
+
+Questions? Contact services@tidymate.ca`
               })
             })
             
             if (emailResponse.ok) {
-              console.log(`✅ Subcontractor notification sent to ${subcontractorData[1]}`)
+              console.log(`✅ Subcontractor notification sent to ${subcontractorData[1]} via Resend`)
             } else {
-              console.error("❌ Failed to send subcontractor email")
+              console.error("❌ Failed to send subcontractor email via Resend")
             }
           } catch (emailError) {
             console.error("Email sending error:", emailError)
