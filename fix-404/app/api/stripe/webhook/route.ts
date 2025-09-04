@@ -80,10 +80,10 @@ export async function POST(request: NextRequest) {
 				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
 			}
 			
-			// Add to Google Sheets using simple API key approach
+			// Add to Google Sheets using working Netlify function
 			try {
 				const baseUrl = process.env.PUBLIC_BASE_URL || 'https://tidymate.ca'
-				const sheetsResponse = await fetch(`${baseUrl}/api/sheets-webhook`, {
+				const sheetsResponse = await fetch(`${baseUrl}/.netlify/functions/zapier-webhook`, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 				})
 				
 				if (sheetsResponse.ok) {
-					console.log("📊 Google Sheets updated successfully")
+					console.log("📊 Google Sheets updated successfully via Netlify function")
 				} else {
 					console.error("❌ Google Sheets update failed:", await sheetsResponse.text())
 				}
