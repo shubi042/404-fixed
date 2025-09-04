@@ -83,6 +83,84 @@ async function sendSubcontractorEmail(booking, subcontractor) {
   return { success: true };
 }
 
+async function sendOwnerEmail(booking, assignedSubcontractor) {
+  if (!resendApiKey) {
+    console.warn("Owner email not sent: RESEND_API_KEY not configured");
+    return { skipped: true };
+  }
+
+  const resend = new Resend(resendApiKey);
+  const subject = `🎉 New Booking Confirmed: ${booking.serviceName} - ${booking.date}`;
+  
+  const addonsList = Array.isArray(booking.addons) ? booking.addons.join(", ") : booking.addons || "None";
+  const total = `${booking.totalAmount.toFixed(2)} ${booking.currency.toUpperCase()}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #0066cc;">🎉 New Booking Confirmed</h2>
+      <p>A new booking has been automatically processed and assigned!</p>
+      
+      <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #1e40af;">📋 Booking Details</h3>
+        <p><strong>Service:</strong> ${booking.serviceName}</p>
+        <p><strong>Add-ons:</strong> ${addonsList}</p>
+        <p><strong>Date & Time:</strong> ${booking.date} at ${booking.time}</p>
+        <p><strong>Total Paid:</strong> <span style="color: #0066cc; font-weight: bold;">$${total}</span></p>
+      </div>
+
+      <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #166534;">👷 Assigned Subcontractor</h3>
+        <p><strong>Name:</strong> ${assignedSubcontractor.name}</p>
+        <p><strong>Email:</strong> <a href="mailto:${assignedSubcontractor.email}">${assignedSubcontractor.email}</a></p>
+        <p><strong>Status:</strong> ✅ Automatically notified via email</p>
+      </div>
+
+      <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #1e40af;">👤 Customer Information</h3>
+        <p><strong>Name:</strong> ${booking.customerName}</p>
+        <p><strong>Email:</strong> <a href="mailto:${booking.customerEmail}">${booking.customerEmail}</a></p>
+        <p><strong>Phone:</strong> <a href="tel:${booking.phone}">${booking.phone}</a></p>
+        <p><strong>Address:</strong> ${booking.address}</p>
+      </div>
+
+      ${booking.instructions ? `
+      <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <h4 style="margin-top: 0; color: #856404;">📝 Special Instructions</h4>
+        <p>${booking.instructions}</p>
+      </div>
+      ` : ''}
+
+      <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #1e40af;">✅ Automation Summary</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li>✅ <strong>Booking added</strong> to Google Sheets automatically</li>
+          <li>✅ <strong>Subcontractor assigned</strong> via round-robin system</li>
+          <li>✅ <strong>Job notification sent</strong> to ${assignedSubcontractor.name}</li>
+          <li>✅ <strong>Customer confirmation</strong> sent automatically</li>
+        </ul>
+      </div>
+
+      <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
+        <p style="color: #6c757d; font-size: 14px;">
+          <strong>Reference ID:</strong> ${booking.sessionId}<br>
+          <strong>Assigned via:</strong> Automated Round-Robin System<br>
+          <strong>Google Sheets:</strong> Updated automatically<br>
+          <strong>System Status:</strong> All automation working perfectly
+        </p>
+      </div>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: fromEmail,
+    to: 'services@tidymate.ca',
+    subject,
+    html,
+  });
+
+  return { success: true };
+}
+
 exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -197,12 +275,20 @@ exports.handler = async (event, context) => {
 
       console.log(`👷 Subcontractor assigned: ${assignedSubcontractor.name}`);
 
-      // Send email
+      // Send email to subcontractor
       try {
         await sendSubcontractorEmail(bookingData, assignedSubcontractor);
-        console.log(`📧 Notification sent to: ${assignedSubcontractor.email}`);
+        console.log(`📧 Subcontractor notification sent to: ${assignedSubcontractor.email}`);
       } catch (emailError) {
-        console.error("Email failed:", emailError);
+        console.error("Subcontractor email failed:", emailError);
+      }
+
+      // Send email to business owner
+      try {
+        await sendOwnerEmail(bookingData, assignedSubcontractor);
+        console.log(`📧 Owner notification sent to: services@tidymate.ca`);
+      } catch (emailError) {
+        console.error("Owner email failed:", emailError);
       }
     }
 
