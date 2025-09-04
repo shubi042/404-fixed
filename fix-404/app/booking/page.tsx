@@ -477,12 +477,24 @@ export default function BookingPage() {
                         </p>
                       </div>
 
+                      {/* Payment Terms Disclaimer */}
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4 mb-6">
+                        <h4 className="font-semibold text-amber-800 mb-2">⚠️ Payment Terms & Cancellation Policy</h4>
+                        <ul className="text-sm text-amber-700 space-y-1">
+                          <li>• <strong>All payments are non-refundable</strong></li>
+                          <li>• <strong>Cancellations within 24 hours</strong> of service will result in forfeiture of payment</li>
+                          <li>• <strong>Services can only be rescheduled</strong> after payment (no refunds)</li>
+                          <li>• By proceeding with payment, you agree to these terms</li>
+                        </ul>
+                      </div>
+
                       <Button className="w-full mt-6" size="lg" onClick={handlePayment} disabled={isProcessing}>
-                        {isProcessing ? "Processing..." : "Book & Pay Now"}
+                        {isProcessing ? "Processing..." : "I Agree - Book & Pay Now"}
                       </Button>
 
                       <div className="text-center mt-2">
                         <p className="text-xs text-muted-foreground">🔒 Secure payment powered by Stripe</p>
+                        <p className="text-xs text-muted-foreground mt-1">By clicking above, you agree to our payment terms</p>
                       </div>
                     </>
                   )}
