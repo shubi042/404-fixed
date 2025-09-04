@@ -147,14 +147,47 @@ exports.handler = async (event, context) => {
     // Wait for formulas
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Read assignment
+    // Read assignment - if empty, manually assign using round-robin
     const readResult = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEET_NAME}!F${rowNumber}:G${rowNumber}`,
     });
 
-    const subcontractorData = readResult.data.values?.[0];
+    let subcontractorData = readResult.data.values?.[0];
     let assignedSubcontractor = null;
+
+    // If no assignment from formula, manually assign using round-robin
+    if (!subcontractorData || !subcontractorData[0] || !subcontractorData[1]) {
+      console.log("No formula assignment found, using manual round-robin...");
+      
+      // Get subcontractors list
+      const subcontractorsResult = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: 'Subcontractors!A2:C50',
+      });
+      
+      const subcontractorsList = subcontractorsResult.data.values || [];
+      const activeSubcontractors = subcontractorsList.filter(row => row[0] && row[0] !== "");
+      
+      if (activeSubcontractors.length > 0) {
+        // Calculate round-robin assignment
+        const assignmentIndex = (rowNumber - 2) % activeSubcontractors.length;
+        const selectedSubcontractor = activeSubcontractors[assignmentIndex];
+        
+        // Update the Google Sheet with assignment
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${SHEET_NAME}!F${rowNumber}:G${rowNumber}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [[selectedSubcontractor[0], selectedSubcontractor[1]]],
+          },
+        });
+        
+        subcontractorData = [selectedSubcontractor[0], selectedSubcontractor[1]];
+        console.log(`✅ Manually assigned: ${selectedSubcontractor[0]}`);
+      }
+    }
 
     if (subcontractorData && subcontractorData[0] && subcontractorData[1]) {
       assignedSubcontractor = {
