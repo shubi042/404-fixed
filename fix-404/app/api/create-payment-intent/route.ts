@@ -49,14 +49,14 @@ export async function POST(request: NextRequest) {
 			cancel_url: `${request.headers.get("origin")}/booking`,
 			customer_email: customerInfo.email,
 			metadata: {
-				customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
-				phone: customerInfo.phone,
-				address: customerInfo.address,
-				date: customerInfo.date,
-				time: customerInfo.time,
-				instructions: customerInfo.instructions || "",
-				service: service.name,
-				addons: addons.map((a: any) => a.name).join(", "),
+				customerName: `${customerInfo.firstName} ${customerInfo.lastName}`.substring(0, 500),
+				phone: customerInfo.phone.substring(0, 40),
+				address: customerInfo.address.substring(0, 500),
+				date: customerInfo.date.substring(0, 40),
+				time: customerInfo.time.substring(0, 40),
+				instructions: (customerInfo.instructions || "").substring(0, 500),
+				service: service.name.substring(0, 500),
+				addons: addons.map((a: any) => a.name).join(", ").substring(0, 500),
 			},
 		})
 

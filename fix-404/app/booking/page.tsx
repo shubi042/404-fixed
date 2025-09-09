@@ -138,7 +138,29 @@ export default function BookingPage() {
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    // Clean and validate phone number format
+    if (field === "phone") {
+      // Remove all non-digit characters except + and ()
+      let cleanedPhone = value.replace(/[^\d+()-\s]/g, "")
+      
+      // If it starts with just digits, assume it's a North American number
+      if (/^\d/.test(cleanedPhone)) {
+        cleanedPhone = cleanedPhone.replace(/\D/g, "") // Remove all non-digits
+        // Format as (XXX) XXX-XXXX for display
+        if (cleanedPhone.length >= 10) {
+          cleanedPhone = cleanedPhone.substring(0, 10)
+          cleanedPhone = `(${cleanedPhone.substring(0, 3)}) ${cleanedPhone.substring(3, 6)}-${cleanedPhone.substring(6)}`
+        } else if (cleanedPhone.length >= 6) {
+          cleanedPhone = `(${cleanedPhone.substring(0, 3)}) ${cleanedPhone.substring(3)}`
+        } else if (cleanedPhone.length >= 3) {
+          cleanedPhone = `(${cleanedPhone.substring(0, 3)}) ${cleanedPhone.substring(3)}`
+        }
+      }
+      
+      setFormData((prev) => ({ ...prev, [field]: cleanedPhone }))
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    }
   }
 
   const handlePayment = async () => {
@@ -156,11 +178,36 @@ export default function BookingPage() {
       return
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      alert("Please enter a valid email address.")
+      return
+    }
+
+    // Validate phone number (must have at least 10 digits)
+    const phoneDigits = formData.phone.replace(/\D/g, "")
+    if (phoneDigits.length < 10) {
+      alert("Please enter a valid phone number with at least 10 digits.")
+      return
+    }
+
     setIsProcessing(true)
 
     try {
       const chosenService =
         servicePricing[selectedService as keyof typeof servicePricing]
+
+      // Clean customer info for Stripe - remove special characters that might cause validation issues
+      const cleanCustomerInfo = {
+        ...formData,
+        firstName: formData.firstName.replace(/[^\w\s-']/g, "").trim(),
+        lastName: formData.lastName.replace(/[^\w\s-']/g, "").trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: phoneDigits, // Send only digits to Stripe
+        address: formData.address.replace(/[^\w\s,.-]/g, "").trim(),
+        instructions: formData.instructions.replace(/[^\w\s,.-]/g, "").trim(),
+      }
 
       const response = await fetch("/api/create-payment-intent", {
         method: "POST",
@@ -172,7 +219,7 @@ export default function BookingPage() {
           currency: "cad",
           service: chosenService,
           addons: selectedAddons.map((id) => addons.find((a) => a.id === id)).filter(Boolean),
-          customerInfo: formData,
+          customerInfo: cleanCustomerInfo,
         }),
       })
 
@@ -392,7 +439,11 @@ export default function BookingPage() {
                         required
                         value={formData.phone}
                         onChange={(e) => handleInputChange("phone", e.target.value)}
+                        maxLength={14}
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter 10-digit phone number (will be formatted automatically)
+                      </p>
                     </div>
                   </div>
                   <div className="mt-4">
