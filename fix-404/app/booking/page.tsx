@@ -138,100 +138,21 @@ export default function BookingPage() {
   }
 
   const handleInputChange = (field: string, value: string) => {
-    // Clean and validate phone number format
-    if (field === "phone") {
-      // Remove all non-digit characters except + and ()
-      let cleanedPhone = value.replace(/[^\d+()-\s]/g, "")
-      
-      // If it starts with just digits, assume it's a North American number
-      if (/^\d/.test(cleanedPhone)) {
-        cleanedPhone = cleanedPhone.replace(/\D/g, "") // Remove all non-digits
-        // Format as (XXX) XXX-XXXX for display
-        if (cleanedPhone.length >= 10) {
-          cleanedPhone = cleanedPhone.substring(0, 10)
-          cleanedPhone = `(${cleanedPhone.substring(0, 3)}) ${cleanedPhone.substring(3, 6)}-${cleanedPhone.substring(6)}`
-        } else if (cleanedPhone.length >= 6) {
-          cleanedPhone = `(${cleanedPhone.substring(0, 3)}) ${cleanedPhone.substring(3)}`
-        } else if (cleanedPhone.length >= 3) {
-          cleanedPhone = `(${cleanedPhone.substring(0, 3)}) ${cleanedPhone.substring(3)}`
-        }
-      }
-      
-      setFormData((prev) => ({ ...prev, [field]: cleanedPhone }))
-    } else {
-      setFormData((prev) => ({ ...prev, [field]: value }))
-    }
-  }
-
-  // Enhanced validation and sanitization function
-  const validateAndSanitizeData = () => {
-    // Check required fields
-    if (
-      !selectedService ||
-      !formData.firstName?.trim() ||
-      !formData.lastName?.trim() ||
-      !formData.email?.trim() ||
-      !formData.phone?.trim() ||
-      !formData.address?.trim() ||
-      !formData.date ||
-      !formData.time
-    ) {
-      return { isValid: false, error: "Please fill in all required fields before proceeding to payment." }
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    const email = formData.email.trim().toLowerCase()
-    if (!emailRegex.test(email)) {
-      return { isValid: false, error: "Please enter a valid email address." }
-    }
-
-    // Validate and clean phone number
-    const phoneDigits = formData.phone.replace(/\D/g, "")
-    if (phoneDigits.length < 10) {
-      return { isValid: false, error: "Please enter a valid phone number with at least 10 digits." }
-    }
-    if (phoneDigits.length > 15) {
-      return { isValid: false, error: "Phone number is too long. Please enter a valid phone number." }
-    }
-
-    // Validate name fields (no special characters that could cause issues)
-    const nameRegex = /^[a-zA-Z\s\-'\.]{1,50}$/
-    if (!nameRegex.test(formData.firstName.trim())) {
-      return { isValid: false, error: "First name contains invalid characters. Please use only letters, spaces, hyphens, and apostrophes." }
-    }
-    if (!nameRegex.test(formData.lastName.trim())) {
-      return { isValid: false, error: "Last name contains invalid characters. Please use only letters, spaces, hyphens, and apostrophes." }
-    }
-
-    // Validate address (reasonable length and characters)
-    if (formData.address.trim().length < 10) {
-      return { isValid: false, error: "Please enter a complete address." }
-    }
-    if (formData.address.trim().length > 200) {
-      return { isValid: false, error: "Address is too long. Please enter a shorter address." }
-    }
-
-    // Sanitize all fields for Stripe compatibility
-    const sanitizedData = {
-      firstName: formData.firstName.trim().replace(/[^\w\s\-'\.]/g, "").substring(0, 50),
-      lastName: formData.lastName.trim().replace(/[^\w\s\-'\.]/g, "").substring(0, 50),
-      email: email,
-      phone: phoneDigits,
-      address: formData.address.trim().replace(/[^\w\s\-,.'#]/g, "").substring(0, 200),
-      date: formData.date.trim(),
-      time: formData.time.trim(),
-      instructions: (formData.instructions || "").trim().replace(/[^\w\s\-,.!?]/g, "").substring(0, 300)
-    }
-
-    return { isValid: true, data: sanitizedData }
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handlePayment = async () => {
-    // Validate and sanitize all data
-    const validation = validateAndSanitizeData()
-    if (!validation.isValid) {
-      alert(validation.error)
+    if (
+      !selectedService ||
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.email ||
+      !formData.phone ||
+      !formData.address ||
+      !formData.date ||
+      !formData.time
+    ) {
+      alert("Please fill in all required fields before proceeding to payment.")
       return
     }
 
@@ -241,30 +162,6 @@ export default function BookingPage() {
       const chosenService =
         servicePricing[selectedService as keyof typeof servicePricing]
 
-      // Ensure service data is also clean
-      const sanitizedService = {
-        name: chosenService.name.replace(/[^\w\s\-]/g, "").substring(0, 100),
-        price: chosenService.price,
-        cleaners: chosenService.cleaners.replace(/[^\w\s]/g, "").substring(0, 50),
-        category: chosenService.category.replace(/[^\w\s\-]/g, "").substring(0, 50)
-      }
-
-      // Clean addon data
-      const sanitizedAddons = selectedAddons
-        .map((id) => addons.find((a) => a.id === id))
-        .filter(Boolean)
-        .map((addon) => ({
-          id: addon.id,
-          name: addon.name.replace(/[^\w\s\-]/g, "").substring(0, 100),
-          price: addon.price
-        }))
-
-      console.log("Sending sanitized data to API:", {
-        service: sanitizedService,
-        addons: sanitizedAddons,
-        customerInfo: validation.data
-      })
-
       const response = await fetch("/api/create-payment-intent", {
         method: "POST",
         headers: {
@@ -273,9 +170,9 @@ export default function BookingPage() {
         body: JSON.stringify({
           amount: calculateTotal() * 100,
           currency: "cad",
-          service: sanitizedService,
-          addons: sanitizedAddons,
-          customerInfo: validation.data,
+          service: chosenService,
+          addons: selectedAddons.map((id) => addons.find((a) => a.id === id)).filter(Boolean),
+          customerInfo: formData,
         }),
       })
 
@@ -495,11 +392,7 @@ export default function BookingPage() {
                         required
                         value={formData.phone}
                         onChange={(e) => handleInputChange("phone", e.target.value)}
-                        maxLength={14}
                       />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Enter 10-digit phone number (will be formatted automatically)
-                      </p>
                     </div>
                   </div>
                   <div className="mt-4">
