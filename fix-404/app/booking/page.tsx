@@ -163,32 +163,75 @@ export default function BookingPage() {
     }
   }
 
-  const handlePayment = async () => {
+  // Enhanced validation and sanitization function
+  const validateAndSanitizeData = () => {
+    // Check required fields
     if (
       !selectedService ||
-      !formData.firstName ||
-      !formData.lastName ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.address ||
+      !formData.firstName?.trim() ||
+      !formData.lastName?.trim() ||
+      !formData.email?.trim() ||
+      !formData.phone?.trim() ||
+      !formData.address?.trim() ||
       !formData.date ||
       !formData.time
     ) {
-      alert("Please fill in all required fields before proceeding to payment.")
-      return
+      return { isValid: false, error: "Please fill in all required fields before proceeding to payment." }
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      alert("Please enter a valid email address.")
-      return
+    const email = formData.email.trim().toLowerCase()
+    if (!emailRegex.test(email)) {
+      return { isValid: false, error: "Please enter a valid email address." }
     }
 
-    // Validate phone number (must have at least 10 digits)
+    // Validate and clean phone number
     const phoneDigits = formData.phone.replace(/\D/g, "")
     if (phoneDigits.length < 10) {
-      alert("Please enter a valid phone number with at least 10 digits.")
+      return { isValid: false, error: "Please enter a valid phone number with at least 10 digits." }
+    }
+    if (phoneDigits.length > 15) {
+      return { isValid: false, error: "Phone number is too long. Please enter a valid phone number." }
+    }
+
+    // Validate name fields (no special characters that could cause issues)
+    const nameRegex = /^[a-zA-Z\s\-'\.]{1,50}$/
+    if (!nameRegex.test(formData.firstName.trim())) {
+      return { isValid: false, error: "First name contains invalid characters. Please use only letters, spaces, hyphens, and apostrophes." }
+    }
+    if (!nameRegex.test(formData.lastName.trim())) {
+      return { isValid: false, error: "Last name contains invalid characters. Please use only letters, spaces, hyphens, and apostrophes." }
+    }
+
+    // Validate address (reasonable length and characters)
+    if (formData.address.trim().length < 10) {
+      return { isValid: false, error: "Please enter a complete address." }
+    }
+    if (formData.address.trim().length > 200) {
+      return { isValid: false, error: "Address is too long. Please enter a shorter address." }
+    }
+
+    // Sanitize all fields for Stripe compatibility
+    const sanitizedData = {
+      firstName: formData.firstName.trim().replace(/[^\w\s\-'\.]/g, "").substring(0, 50),
+      lastName: formData.lastName.trim().replace(/[^\w\s\-'\.]/g, "").substring(0, 50),
+      email: email,
+      phone: phoneDigits,
+      address: formData.address.trim().replace(/[^\w\s\-,.'#]/g, "").substring(0, 200),
+      date: formData.date.trim(),
+      time: formData.time.trim(),
+      instructions: (formData.instructions || "").trim().replace(/[^\w\s\-,.!?]/g, "").substring(0, 300)
+    }
+
+    return { isValid: true, data: sanitizedData }
+  }
+
+  const handlePayment = async () => {
+    // Validate and sanitize all data
+    const validation = validateAndSanitizeData()
+    if (!validation.isValid) {
+      alert(validation.error)
       return
     }
 
@@ -198,16 +241,29 @@ export default function BookingPage() {
       const chosenService =
         servicePricing[selectedService as keyof typeof servicePricing]
 
-      // Clean customer info for Stripe - remove special characters that might cause validation issues
-      const cleanCustomerInfo = {
-        ...formData,
-        firstName: formData.firstName.replace(/[^\w\s-']/g, "").trim(),
-        lastName: formData.lastName.replace(/[^\w\s-']/g, "").trim(),
-        email: formData.email.trim().toLowerCase(),
-        phone: phoneDigits, // Send only digits to Stripe
-        address: formData.address.replace(/[^\w\s,.-]/g, "").trim(),
-        instructions: formData.instructions.replace(/[^\w\s,.-]/g, "").trim(),
+      // Ensure service data is also clean
+      const sanitizedService = {
+        name: chosenService.name.replace(/[^\w\s\-]/g, "").substring(0, 100),
+        price: chosenService.price,
+        cleaners: chosenService.cleaners.replace(/[^\w\s]/g, "").substring(0, 50),
+        category: chosenService.category.replace(/[^\w\s\-]/g, "").substring(0, 50)
       }
+
+      // Clean addon data
+      const sanitizedAddons = selectedAddons
+        .map((id) => addons.find((a) => a.id === id))
+        .filter(Boolean)
+        .map((addon) => ({
+          id: addon.id,
+          name: addon.name.replace(/[^\w\s\-]/g, "").substring(0, 100),
+          price: addon.price
+        }))
+
+      console.log("Sending sanitized data to API:", {
+        service: sanitizedService,
+        addons: sanitizedAddons,
+        customerInfo: validation.data
+      })
 
       const response = await fetch("/api/create-payment-intent", {
         method: "POST",
@@ -217,9 +273,9 @@ export default function BookingPage() {
         body: JSON.stringify({
           amount: calculateTotal() * 100,
           currency: "cad",
-          service: chosenService,
-          addons: selectedAddons.map((id) => addons.find((a) => a.id === id)).filter(Boolean),
-          customerInfo: cleanCustomerInfo,
+          service: sanitizedService,
+          addons: sanitizedAddons,
+          customerInfo: validation.data,
         }),
       })
 
