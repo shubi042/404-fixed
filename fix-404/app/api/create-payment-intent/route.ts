@@ -15,31 +15,60 @@ export async function POST(request: NextRequest) {
 			apiVersion: "2024-06-20",
 		})
 
-		const { amount, currency, service, customerInfo } = await request.json()
+		const { amount, currency, service, addons, customerInfo } = await request.json()
 
-		// ULTRA MINIMAL - only what Stripe absolutely requires
+		// Clean all strings to remove ANY characters that could cause validation issues
+		const cleanString = (str: string) => {
+			if (!str) return ""
+			return str.replace(/[^\w\s]/g, "").trim().substring(0, 100)
+		}
+
+		const cleanPhone = (phone: string) => {
+			if (!phone) return ""
+			return phone.replace(/\D/g, "").substring(0, 15)
+		}
+
+		// Create Stripe Checkout Session with absolutely clean data
 		const session = await stripe.checkout.sessions.create({
 			payment_method_types: ["card"],
 			line_items: [
 				{
 					price_data: {
-						currency: "cad",
+						currency: currency,
 						product_data: {
-							name: "Cleaning Service"
+							name: cleanString(service.name),
+							description: "Professional cleaning service",
 						},
-						unit_amount: amount,
+						unit_amount: service.price * 100,
 					},
 					quantity: 1,
-				}
+				},
+				...addons.map((addon: any) => ({
+					price_data: {
+						currency: currency,
+						product_data: {
+							name: cleanString(addon.name),
+							description: "Add-on service",
+						},
+						unit_amount: addon.price * 100,
+					},
+					quantity: 1,
+				})),
 			],
 			mode: "payment",
-			success_url: "https://tidymate.ca/booking/success",
-			cancel_url: "https://tidymate.ca/booking"
+			success_url: `${request.headers.get("origin")}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `${request.headers.get("origin")}/booking`,
+			customer_email: customerInfo.email,
+			metadata: {
+				name: cleanString(`${customerInfo.firstName} ${customerInfo.lastName}`),
+				phone: cleanPhone(customerInfo.phone),
+				service: cleanString(service.name),
+			},
 		})
 
 		return NextResponse.json({ sessionId: session.id })
 	} catch (error: any) {
-		console.error("Stripe error:", error)
-		return NextResponse.json({ error: "Payment setup failed" }, { status: 500 })
+		console.error("Error creating payment intent:", error)
+		return NextResponse.json({ error: error?.message || "Failed to create payment intent" }, { status: 500 })
 	}
 }
