@@ -279,7 +279,7 @@ export default function BookingPage() {
                                 {servicePricing[selectedService as keyof typeof servicePricing]?.name}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {servicePricing[selectedService as keyof typeof servicePricing]?.cleaners} • Professional
+                                {servicePricing[selectedService as keyof typeof servicePricing]?.cleaners} - Professional
                                 Equipment Included
                               </p>
                             </div>
@@ -473,7 +473,7 @@ export default function BookingPage() {
                           <span>${calculateTotal()} CAD</span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-2">
-                          All taxes included • Professional equipment provided
+                          All taxes included - Professional equipment provided
                         </p>
                       </div>
 
