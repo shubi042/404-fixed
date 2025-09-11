@@ -15,48 +15,33 @@ export async function POST(request: NextRequest) {
 			apiVersion: "2024-06-20",
 		})
 
-		const { amount, currency, service, addons, customerInfo } = await request.json()
+		const { amount, currency, service, customerInfo } = await request.json()
 
-		// Create Stripe Checkout Session - BACK TO ORIGINAL WORKING VERSION
+		// Create minimal Stripe Checkout Session
 		const session = await stripe.checkout.sessions.create({
 			payment_method_types: ["card"],
 			line_items: [
 				{
 					price_data: {
-						currency: currency,
+						currency: currency || "cad",
 						product_data: {
 							name: service.name,
-							description: `${service.cleaners} - Professional Equipment Included`,
+							description: "Professional cleaning service",
 						},
-						unit_amount: service.price * 100, // Convert to cents
+						unit_amount: amount,
 					},
 					quantity: 1,
-				},
-				...addons.map((addon: any) => ({
-					price_data: {
-						currency: currency,
-						product_data: {
-							name: addon.name,
-							description: "Add-on service",
-						},
-						unit_amount: addon.price * 100,
-					},
-					quantity: 1,
-				})),
+				}
 			],
 			mode: "payment",
-			success_url: `${request.headers.get("origin")}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `${request.headers.get("origin")}/booking`,
+			success_url: `https://tidymate.ca/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `https://tidymate.ca/booking`,
 			customer_email: customerInfo.email,
 			metadata: {
 				customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
 				phone: customerInfo.phone,
 				address: customerInfo.address,
-				date: customerInfo.date,
-				time: customerInfo.time,
-				instructions: customerInfo.instructions || "",
 				service: service.name,
-				addons: addons.map((a: any) => a.name).join(", "),
 			},
 		})
 
