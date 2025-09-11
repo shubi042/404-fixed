@@ -242,57 +242,57 @@ export default function BookingPage() {
                     </div>
                   </RadioGroup>
 
-                                      <>
-                      <Label htmlFor="service" className="text-base font-semibold mb-4 block">
-                        Select Your Service
-                      </Label>
-                      <Select value={selectedService} onValueChange={setSelectedService}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose your cleaning service" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(serviceCategories).map(([category, services]) => (
-                            <div key={category}>
-                              <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50">
-                                {category}
-                              </div>
-                              {services.map((service) => (
-                                <SelectItem key={service.key} value={service.key}>
-                                  <div className="flex justify-between items-center w-full">
-                                    <span>{service.name}</span>
-                                    <div className="text-right ml-4">
-                                      <div className="font-semibold">${service.price} CAD</div>
-                                      <div className="text-xs text-muted-foreground">{service.cleaners}</div>
-                                    </div>
+                  <>
+                    <Label htmlFor="service" className="text-base font-semibold mb-4 block">
+                      Select Your Service
+                    </Label>
+                    <Select value={selectedService} onValueChange={setSelectedService}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose your cleaning service" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(serviceCategories).map(([category, services]) => (
+                          <div key={category}>
+                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50">
+                              {category}
+                            </div>
+                            {services.map((service) => (
+                              <SelectItem key={service.key} value={service.key}>
+                                <div className="flex justify-between items-center w-full">
+                                  <span>{service.name}</span>
+                                  <div className="text-right ml-4">
+                                    <div className="font-semibold">${service.price} CAD</div>
+                                    <div className="text-xs text-muted-foreground">{service.cleaners}</div>
                                   </div>
-                                </SelectItem>
-                              ))}
-                            </div>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {selectedService && (
-                        <div className="mt-2 p-3 bg-muted/50 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="font-medium">
-                                {servicePricing[selectedService as keyof typeof servicePricing]?.name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {servicePricing[selectedService as keyof typeof servicePricing]?.cleaners} - Professional
-                                Equipment Included
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold">
-                                ${servicePricing[selectedService as keyof typeof servicePricing]?.price} CAD
-                              </p>
-                              <p className="text-xs text-muted-foreground">Flat Rate</p>
-                            </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedService && (
+                      <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">
+                              {servicePricing[selectedService as keyof typeof servicePricing]?.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {servicePricing[selectedService as keyof typeof servicePricing]?.cleaners} - Professional
+                              Equipment Included
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold">
+                              ${servicePricing[selectedService as keyof typeof servicePricing]?.price} CAD
+                            </p>
+                            <p className="text-xs text-muted-foreground">Flat Rate</p>
                           </div>
                         </div>
-                      )}
-                    </>
+                      </div>
+                    )}
+                  </>
                 </div>
 
                 {/* Add-on Services */}
