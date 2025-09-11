@@ -17,16 +17,15 @@ export async function POST(request: NextRequest) {
 
 		const { amount, currency, service, customerInfo } = await request.json()
 
-		// Create minimal Stripe Checkout Session
+		// ULTRA MINIMAL - only what Stripe absolutely requires
 		const session = await stripe.checkout.sessions.create({
 			payment_method_types: ["card"],
 			line_items: [
 				{
 					price_data: {
-						currency: currency || "cad",
+						currency: "cad",
 						product_data: {
-							name: service.name,
-							description: "Professional cleaning service",
+							name: "Cleaning Service"
 						},
 						unit_amount: amount,
 					},
@@ -34,20 +33,13 @@ export async function POST(request: NextRequest) {
 				}
 			],
 			mode: "payment",
-			success_url: `https://tidymate.ca/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `https://tidymate.ca/booking`,
-			customer_email: customerInfo.email,
-			metadata: {
-				customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
-				phone: customerInfo.phone,
-				address: customerInfo.address,
-				service: service.name,
-			},
+			success_url: "https://tidymate.ca/booking/success",
+			cancel_url: "https://tidymate.ca/booking"
 		})
 
 		return NextResponse.json({ sessionId: session.id })
 	} catch (error: any) {
-		console.error("Error creating payment intent:", error)
-		return NextResponse.json({ error: error?.message || "Failed to create payment intent" }, { status: 500 })
+		console.error("Stripe error:", error)
+		return NextResponse.json({ error: "Payment setup failed" }, { status: 500 })
 	}
 }
