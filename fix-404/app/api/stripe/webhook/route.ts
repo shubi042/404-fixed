@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
 import { sendOwnerBookingEmail, sendCustomerBookingEmail } from "@/lib/email"
+import { addBookingToSheets, type BookingData } from "@/lib/google-sheets"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -75,6 +76,30 @@ export async function POST(request: NextRequest) {
 				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
 			}
 			sendOwnerViaFunction(ownerPayload)
+
+			// Add booking to Google Sheets
+			const sheetsData: BookingData = {
+				timestamp: new Date().toISOString(),
+				customerName: ownerPayload.customerName,
+				customerEmail: ownerPayload.customerEmail,
+				phone: ownerPayload.phone,
+				address: ownerPayload.address,
+				service: ownerPayload.serviceName,
+				addons: ownerPayload.addons.join(", "),
+				totalAmount: ownerPayload.totalAmountCents ? `$${(ownerPayload.totalAmountCents / 100).toFixed(2)} ${ownerPayload.currency?.toUpperCase() || 'CAD'}` : 'Unknown',
+				date: ownerPayload.date,
+				time: ownerPayload.time,
+				instructions: metadata.instructions || "",
+				sessionId: ownerPayload.sessionId || "",
+				paymentStatus: "Completed"
+			}
+
+			const sheetsResult = await addBookingToSheets(sheetsData)
+			if (sheetsResult.success) {
+				console.log("✅ Booking added to Google Sheets")
+			} else {
+				console.warn("⚠️ Failed to add booking to Google Sheets:", sheetsResult.error)
+			}
 		} catch (err) {
 			console.error("Error handling checkout.session.completed:", err)
 		}

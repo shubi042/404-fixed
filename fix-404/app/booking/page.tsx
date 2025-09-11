@@ -475,12 +475,26 @@ export default function BookingPage() {
                         </p>
                       </div>
 
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-semibold text-sm text-blue-800 mb-2">Payment Information</h4>
+                        <ul className="text-xs text-blue-700 space-y-1">
+                          <li>• Secure payment processing through Stripe</li>
+                          <li>• All major credit cards accepted</li>
+                          <li>• Payment is processed immediately upon booking</li>
+                          <li>• You'll receive email confirmation after payment</li>
+                          <li>• Refund policy: Full refund if cancelled 24+ hours in advance</li>
+                        </ul>
+                      </div>
+
                       <Button className="w-full mt-6" size="lg" onClick={handlePayment} disabled={isProcessing}>
                         {isProcessing ? "Processing..." : "Book & Pay Now"}
                       </Button>
 
                       <div className="text-center mt-2">
                         <p className="text-xs text-muted-foreground">🔒 Secure payment powered by Stripe</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          By proceeding, you agree to our terms of service and payment policy
+                        </p>
                       </div>
                     </>
                   )}
