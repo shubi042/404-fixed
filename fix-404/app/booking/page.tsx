@@ -29,6 +29,7 @@ export default function BookingPage() {
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [pricingMode, setPricingMode] = useState<"flat">("flat")
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   const servicePricing = {
     // Airbnb Cleaning Services
@@ -153,6 +154,11 @@ export default function BookingPage() {
       !formData.time
     ) {
       alert("Please fill in all required fields before proceeding to payment.")
+      return
+    }
+
+    if (!agreedToTerms) {
+      alert("Please agree to the refund and cancellation policy before proceeding.")
       return
     }
 
@@ -476,17 +482,41 @@ export default function BookingPage() {
                       </div>
 
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                        <h4 className="font-semibold text-sm text-blue-800 mb-2">Payment Information</h4>
+                        <h4 className="font-semibold text-sm text-blue-800 mb-2">Payment & Cancellation Policy</h4>
                         <ul className="text-xs text-blue-700 space-y-1">
                           <li>• Secure payment processing through Stripe</li>
                           <li>• All major credit cards accepted</li>
                           <li>• Payment is processed immediately upon booking</li>
                           <li>• You'll receive email confirmation after payment</li>
-                          <li>• Refund policy: Full refund if cancelled 24+ hours in advance</li>
                         </ul>
+                        
+                        <div className="mt-3 pt-3 border-t border-blue-300">
+                          <h5 className="font-semibold text-xs text-blue-800 mb-2">REFUND & CANCELLATION POLICY:</h5>
+                          <ul className="text-xs text-blue-700 space-y-1">
+                            <li>• <strong>No refunds</strong> are provided after booking confirmation</li>
+                            <li>• <strong>Cancellations within 24 hours</strong> of scheduled service result in <strong>forfeiture of full payment</strong></li>
+                            <li>• <strong>Cancellations 24+ hours in advance</strong> may be <strong>rescheduled to a new date</strong> (no refund)</li>
+                            <li>• Emergency cancellations will be reviewed on a case-by-case basis</li>
+                            <li>• Contact us immediately at services@tidymate.ca for any changes</li>
+                          </ul>
+                        </div>
                       </div>
 
-                      <Button className="w-full mt-6" size="lg" onClick={handlePayment} disabled={isProcessing}>
+                      <div className="flex items-start space-x-3 p-3 border rounded-lg mb-4">
+                        <Checkbox
+                          id="terms-agreement"
+                          checked={agreedToTerms}
+                          onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                          className="mt-1"
+                        />
+                        <Label htmlFor="terms-agreement" className="text-sm cursor-pointer leading-relaxed">
+                          I understand and agree to the <strong>refund and cancellation policy</strong> stated above. 
+                          I acknowledge that <strong>no refunds will be provided</strong> after booking confirmation, 
+                          and cancellations within 24 hours of service will result in forfeiture of payment.
+                        </Label>
+                      </div>
+
+                      <Button className="w-full mt-6" size="lg" onClick={handlePayment} disabled={isProcessing || !agreedToTerms}>
                         {isProcessing ? "Processing..." : "Book & Pay Now"}
                       </Button>
 
