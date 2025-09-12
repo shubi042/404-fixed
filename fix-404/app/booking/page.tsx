@@ -32,30 +32,30 @@ export default function BookingPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   const servicePricing = {
-    // Airbnb Cleaning Services
+    // Airbnb/Residential Cleaning Services
     "airbnb-1bed": {
-      name: "Airbnb 1 Bedroom",
+      name: "Airbnb/Residential 1 Bedroom",
       price: 110,
       cleaners: "1 Cleaner",
-      category: "Airbnb Cleaning",
+      category: "Airbnb/Residential Cleaning",
     },
     "airbnb-2bed": {
-      name: "Airbnb 2 Bedrooms",
+      name: "Airbnb/Residential 2 Bedrooms",
       price: 140,
       cleaners: "1 Cleaner",
-      category: "Airbnb Cleaning",
+      category: "Airbnb/Residential Cleaning",
     },
     "airbnb-3bed": {
-      name: "Airbnb 3 Bedrooms",
+      name: "Airbnb/Residential 3 Bedrooms",
       price: 200,
-      cleaners: "2 Cleaners",
-      category: "Airbnb Cleaning",
+      cleaners: "1 Cleaner",
+      category: "Airbnb/Residential Cleaning",
     },
     "airbnb-4bed": {
-      name: "Airbnb 4+ Bedrooms",
+      name: "Airbnb/Residential 4+ Bedrooms",
       price: 240,
       cleaners: "2 Cleaners",
-      category: "Airbnb Cleaning",
+      category: "Airbnb/Residential Cleaning",
     },
 
     // Post-Construction Residential
