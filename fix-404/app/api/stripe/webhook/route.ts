@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
 import { sendOwnerBookingEmail, sendCustomerBookingEmail } from "@/lib/email"
 import { addBookingToSheets, type BookingData } from "@/lib/google-sheets"
+import { assignContractor } from "@/lib/contractor-assignment"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -77,7 +78,14 @@ export async function POST(request: NextRequest) {
 			}
 			sendOwnerViaFunction(ownerPayload)
 
-			// Add booking to Google Sheets
+			// Assign contractor automatically
+			const contractorAssignment = assignContractor(
+				ownerPayload.serviceName,
+				ownerPayload.date || new Date().toISOString().split('T')[0],
+				1 // Default to 1 cleaner, could be determined from service type
+			)
+
+			// Add booking to Google Sheets with contractor assignment
 			const sheetsData: BookingData = {
 				timestamp: new Date().toISOString(),
 				customerName: ownerPayload.customerName,
@@ -91,12 +99,19 @@ export async function POST(request: NextRequest) {
 				time: ownerPayload.time,
 				instructions: metadata.instructions || "",
 				sessionId: ownerPayload.sessionId || "",
-				paymentStatus: "Completed"
+				paymentStatus: "Completed",
+				contractorName: contractorAssignment?.contractorName,
+				contractorEmail: contractorAssignment?.contractorEmail,
+				contractorPhone: contractorAssignment?.contractorPhone,
+				estimatedDuration: contractorAssignment?.estimatedDuration ? `${contractorAssignment.estimatedDuration} hours` : ""
 			}
 
 			const sheetsResult = await addBookingToSheets(sheetsData)
 			if (sheetsResult.success) {
-				console.log("✅ Booking added to Google Sheets")
+				console.log("✅ Booking added to Google Sheets with contractor assignment")
+				if (contractorAssignment) {
+					console.log(`✅ Contractor assigned: ${contractorAssignment.contractorName}`)
+				}
 			} else {
 				console.warn("⚠️ Failed to add booking to Google Sheets:", sheetsResult.error)
 			}

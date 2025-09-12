@@ -19,6 +19,10 @@ export interface BookingData {
   instructions: string
   sessionId: string
   paymentStatus: string
+  contractorName?: string
+  contractorEmail?: string
+  contractorPhone?: string
+  estimatedDuration?: string
 }
 
 export async function addBookingToSheets(bookingData: BookingData) {
@@ -54,14 +58,18 @@ export async function addBookingToSheets(bookingData: BookingData) {
         bookingData.time,
         bookingData.instructions,
         bookingData.sessionId,
-        bookingData.paymentStatus
+        bookingData.paymentStatus,
+        bookingData.contractorName || "Unassigned",
+        bookingData.contractorEmail || "",
+        bookingData.contractorPhone || "",
+        bookingData.estimatedDuration || ""
       ]
     ]
 
     // Add the booking to the sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: 'Bookings!A:M', // Assuming sheet is named "Bookings"
+      range: 'Bookings!A:Q', // Extended to include contractor columns
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values,
@@ -107,13 +115,17 @@ export async function createBookingSheet(sheetId: string) {
       'Preferred Time',
       'Instructions',
       'Session ID',
-      'Payment Status'
+      'Payment Status',
+      'Assigned Contractor',
+      'Contractor Email',
+      'Contractor Phone',
+      'Estimated Duration (hrs)'
     ]
 
     // Add headers to the sheet
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range: 'Bookings!A1:M1',
+      range: 'Bookings!A1:Q1',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [headers],
