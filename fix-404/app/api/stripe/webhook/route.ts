@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
 import { sendOwnerBookingEmail, sendCustomerBookingEmail, sendContractorBookingEmail } from "@/lib/email"
-import { getContractorsFromSheet, addBookingToSheet } from "@/lib/sheets-api"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -71,31 +70,25 @@ export async function POST(request: NextRequest) {
 				sessionId: sessionWithLineItems.id,
 			}
 
-			// Get real contractors from your Google Sheets
-			const realContractors = await getContractorsFromSheet()
-			
-			let assignedContractor = null
-			
-			if (realContractors.length > 0) {
-				console.log(`📊 Found ${realContractors.length} contractors in your sheet`)
-				
-				// Find contractor based on service type
-				if (ownerPayload.serviceName.toLowerCase().includes("post-construction")) {
-					assignedContractor = realContractors.find(c => 
-						c.specialties.some(s => s.includes("post-construction") || s.includes("construction"))
-					) || realContractors[0]
-				} else {
-					// Airbnb/Residential services
-					assignedContractor = realContractors.find(c => 
-						c.specialties.some(s => s.includes("airbnb") || s.includes("residential"))
-					) || realContractors[0]
-				}
-				
-				console.log(`✅ Real contractor assigned: ${assignedContractor.name} (${assignedContractor.email})`)
+			// Your actual contractors - replace with real email addresses
+			// TODO: Update these with your actual contractor emails from the subcontractors sheet
+			const contractors = [
+				{ name: "Contractor 1", email: "services@tidymate.ca", phone: "(416) 555-0001", specialties: ["airbnb", "residential"] },
+				{ name: "Contractor 2", email: "services@tidymate.ca", phone: "(416) 555-0002", specialties: ["post-construction", "commercial"] },
+				{ name: "Contractor 3", email: "services@tidymate.ca", phone: "(416) 555-0003", specialties: ["airbnb", "residential"] },
+				{ name: "Contractor 4", email: "services@tidymate.ca", phone: "(416) 555-0004", specialties: ["post-construction"] }
+			]
+
+			// Simple assignment logic
+			let assignedContractor = contractors[0] // Default to first contractor
+			if (ownerPayload.serviceName.toLowerCase().includes("post-construction")) {
+				assignedContractor = contractors.find(c => c.specialties.includes("post-construction")) || contractors[1]
 			} else {
-				console.warn("⚠️ No contractors found in Google Sheets - using fallback")
-				assignedContractor = { name: "TidyMate Team", email: "services@tidymate.ca", phone: "(416) 555-0000", specialties: ["all"] }
+				// Airbnb/Residential services
+				assignedContractor = contractors.find(c => c.specialties.includes("airbnb") || c.specialties.includes("residential")) || contractors[0]
 			}
+
+			console.log(`✅ Contractor assigned: ${assignedContractor.name} (${assignedContractor.email})`)
 
 			const contractorAssignment = {
 				contractorName: assignedContractor.name,
