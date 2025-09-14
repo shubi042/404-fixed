@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
-import { sendOwnerBookingEmail, sendCustomerBookingEmail } from "@/lib/email"
+import { sendOwnerBookingEmail, sendCustomerBookingEmail, sendContractorBookingEmail } from "@/lib/email"
 import { addBookingToSheets, type BookingData } from "@/lib/google-sheets"
 import { assignContractor } from "@/lib/contractor-assignment"
 
@@ -72,18 +72,37 @@ export async function POST(request: NextRequest) {
 				sessionId: sessionWithLineItems.id,
 			}
 
-			await sendOwnerBookingEmail(ownerPayload)
-			if (ownerPayload.customerEmail && ownerPayload.customerEmail !== "unknown@example.com") {
-				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
-			}
-			sendOwnerViaFunction(ownerPayload)
-
-			// Assign contractor automatically
+			// Assign contractor automatically FIRST
 			const contractorAssignment = assignContractor(
 				ownerPayload.serviceName,
 				ownerPayload.date || new Date().toISOString().split('T')[0],
 				1 // Default to 1 cleaner, could be determined from service type
 			)
+
+			// Send emails to all parties
+			await sendOwnerBookingEmail(ownerPayload, contractorAssignment)
+			
+			if (ownerPayload.customerEmail && ownerPayload.customerEmail !== "unknown@example.com") {
+				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
+			}
+
+			// Send email to assigned contractor
+			if (contractorAssignment) {
+				await sendContractorBookingEmail(contractorAssignment.contractorEmail, contractorAssignment.contractorName, {
+					service: ownerPayload.serviceName,
+					addons: ownerPayload.addons.join(", "),
+					estimatedDuration: `${contractorAssignment.estimatedDuration} hours`,
+					date: ownerPayload.date,
+					time: ownerPayload.time,
+					address: ownerPayload.address,
+					instructions: metadata.instructions || "",
+					customerName: ownerPayload.customerName,
+					phone: ownerPayload.phone,
+					customerEmail: ownerPayload.customerEmail
+				})
+			}
+			
+			sendOwnerViaFunction(ownerPayload)
 
 			// Add booking to Google Sheets with contractor assignment
 			const sheetsData: BookingData = {
