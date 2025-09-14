@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
 import { sendOwnerBookingEmail, sendCustomerBookingEmail, sendContractorBookingEmail } from "@/lib/email"
+import { getContractorsFromSheet, addBookingToSheet } from "@/lib/sheets-api"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -70,18 +71,30 @@ export async function POST(request: NextRequest) {
 				sessionId: sessionWithLineItems.id,
 			}
 
-			// Simple contractor assignment (using fallback contractors)
-			const contractors = [
-				{ name: "Maria Santos", email: "maria@tidymate.ca", phone: "(416) 555-0101", specialties: ["airbnb", "residential"] },
-				{ name: "David Chen", email: "david@tidymate.ca", phone: "(416) 555-0102", specialties: ["post-construction", "commercial"] },
-				{ name: "Sarah Johnson", email: "sarah@tidymate.ca", phone: "(416) 555-0103", specialties: ["airbnb", "residential"] },
-				{ name: "Ahmed Hassan", email: "ahmed@tidymate.ca", phone: "(416) 555-0104", specialties: ["post-construction", "commercial"] }
-			]
-
-			// Simple assignment logic
-			let assignedContractor = contractors[0] // Default to Maria Santos
-			if (ownerPayload.serviceName.toLowerCase().includes("post-construction")) {
-				assignedContractor = contractors[1] // David Chen for post-construction
+			// Get real contractors from your Google Sheets
+			const realContractors = await getContractorsFromSheet()
+			
+			let assignedContractor = null
+			
+			if (realContractors.length > 0) {
+				console.log(`📊 Found ${realContractors.length} contractors in your sheet`)
+				
+				// Find contractor based on service type
+				if (ownerPayload.serviceName.toLowerCase().includes("post-construction")) {
+					assignedContractor = realContractors.find(c => 
+						c.specialties.some(s => s.includes("post-construction") || s.includes("construction"))
+					) || realContractors[0]
+				} else {
+					// Airbnb/Residential services
+					assignedContractor = realContractors.find(c => 
+						c.specialties.some(s => s.includes("airbnb") || s.includes("residential"))
+					) || realContractors[0]
+				}
+				
+				console.log(`✅ Real contractor assigned: ${assignedContractor.name} (${assignedContractor.email})`)
+			} else {
+				console.warn("⚠️ No contractors found in Google Sheets - using fallback")
+				assignedContractor = { name: "TidyMate Team", email: "services@tidymate.ca", phone: "(416) 555-0000", specialties: ["all"] }
 			}
 
 			const contractorAssignment = {
@@ -98,7 +111,7 @@ export async function POST(request: NextRequest) {
 				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
 			}
 
-			// Send email to assigned contractor
+			// Send email to assigned contractor (REAL contractor from your sheet)
 			await sendContractorBookingEmail(assignedContractor.email, assignedContractor.name, {
 				service: ownerPayload.serviceName,
 				addons: ownerPayload.addons.join(", "),
@@ -112,10 +125,31 @@ export async function POST(request: NextRequest) {
 				customerEmail: ownerPayload.customerEmail
 			})
 
+			// Add booking to Google Sheets
+			await addBookingToSheet({
+				timestamp: new Date().toISOString(),
+				customerName: ownerPayload.customerName,
+				customerEmail: ownerPayload.customerEmail,
+				phone: ownerPayload.phone,
+				address: ownerPayload.address,
+				service: ownerPayload.serviceName,
+				addons: ownerPayload.addons.join(", "),
+				totalAmount: ownerPayload.totalAmountCents ? `$${(ownerPayload.totalAmountCents / 100).toFixed(2)} ${ownerPayload.currency?.toUpperCase() || 'CAD'}` : 'Unknown',
+				date: ownerPayload.date,
+				time: ownerPayload.time,
+				instructions: metadata.instructions || "",
+				sessionId: ownerPayload.sessionId || "",
+				paymentStatus: "Completed",
+				contractorName: assignedContractor.name,
+				contractorEmail: assignedContractor.email,
+				contractorPhone: assignedContractor.phone,
+				estimatedDuration: "3 hours"
+			})
+
 			sendOwnerViaFunction(ownerPayload)
 
 			console.log("✅ Booking processed and emails sent to all parties")
-			console.log(`✅ Contractor assigned: ${assignedContractor.name}`)
+			console.log(`✅ REAL contractor assigned from your sheet: ${assignedContractor.name} (${assignedContractor.email})`)
 
 		} catch (err) {
 			console.error("Error handling checkout.session.completed:", err)
