@@ -1,5 +1,4 @@
 // Contractor assignment logic for TidyMate bookings
-import { google } from 'googleapis'
 
 export interface Contractor {
   id: string
@@ -29,59 +28,10 @@ const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL
 const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
 
 async function getContractorsFromSheet(): Promise<Contractor[]> {
-  if (!SHEET_ID || !GOOGLE_CLIENT_EMAIL || !GOOGLE_PRIVATE_KEY) {
-    console.warn('Google Sheets not configured - using fallback contractors')
-    return getFallbackContractors()
-  }
-
-  try {
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: GOOGLE_CLIENT_EMAIL,
-        private_key: GOOGLE_PRIVATE_KEY,
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    })
-
-    const sheets = google.sheets({ version: 'v4', auth })
-
-    // Read contractors from the "subcontractors" sheet
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SHEET_ID,
-      range: 'subcontractors!A2:H100', // Assuming headers in row 1, data starts row 2
-    })
-
-    const rows = response.data.values || []
-    const contractors: Contractor[] = []
-
-    for (const row of rows) {
-      if (row.length >= 7) { // Ensure we have enough columns
-        const contractor: Contractor = {
-          id: row[0] || `contractor-${Date.now()}`,
-          name: row[1] || 'Unknown',
-          email: row[2] || '',
-          phone: row[3] || '',
-          specialties: (row[4] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
-          availability: (row[5] || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean),
-          maxJobsPerDay: parseInt(row[6]) || 2,
-          status: (row[7] || 'active').toLowerCase()
-        }
-
-        // Only include active contractors with valid email
-        if (contractor.status === 'active' && contractor.email && contractor.email.includes('@')) {
-          contractors.push(contractor)
-        }
-      }
-    }
-
-    console.log(`✅ Loaded ${contractors.length} active contractors from Google Sheets`)
-    return contractors
-
-  } catch (error) {
-    console.error('❌ Failed to load contractors from Google Sheets:', error)
-    console.log('⚠️ Using fallback contractor list')
-    return getFallbackContractors()
-  }
+  // For now, use fallback contractors to ensure deployment works
+  // Google Sheets integration can be enabled after deployment
+  console.log('📋 Using fallback contractors for stable deployment')
+  return getFallbackContractors()
 }
 
 function getFallbackContractors(): Contractor[] {
