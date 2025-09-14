@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 			}
 
 			// Assign contractor automatically FIRST
-			const contractorAssignment = assignContractor(
+			const contractorAssignment = await assignContractor(
 				ownerPayload.serviceName,
 				ownerPayload.date || new Date().toISOString().split('T')[0],
 				1 // Default to 1 cleaner, could be determined from service type

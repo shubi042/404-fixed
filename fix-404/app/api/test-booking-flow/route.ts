@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
 		// Step 1: Assign contractor
 		console.log("👷 Step 1: Assigning contractor...")
-		const contractorAssignment = assignContractor(
+		const contractorAssignment = await assignContractor(
 			testBooking.serviceName,
 			testBooking.date,
 			1
