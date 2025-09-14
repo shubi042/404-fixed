@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
 				})),
 			],
 			mode: "payment",
-			success_url: `${request.headers.get("origin")}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `${request.headers.get("origin")}/booking`,
+			success_url: `https://tidymate.ca/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `https://tidymate.ca/booking`,
 			customer_email: customerInfo.email,
 			metadata: {
 				name: cleanString(`${customerInfo.firstName} ${customerInfo.lastName}`),
