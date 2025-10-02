@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
 import { sendOwnerBookingEmail, sendCustomerBookingEmail, sendContractorBookingEmail } from "@/lib/email"
+import { addBookingToSheet } from "@/lib/sheets-api"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 		return NextResponse.json({ received: true }, { status: 200 })
 	}
 
-	const stripe = new Stripe(stripeSecret, { apiVersion: "2024-06-20" })
+	const stripe = new Stripe(stripeSecret, { apiVersion: "2025-09-30.clover" })
 	const body = await request.text()
 	const sig = request.headers.get("stripe-signature")
 	if (!sig) {

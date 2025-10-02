@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: "Stripe secret key not configured" }, { status: 500 })
 		}
 
-		const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" })
+		const stripe = new Stripe(stripeSecretKey, { apiVersion: "2025-09-30.clover" })
 
 		let sessionId: string | null = null
 		const { searchParams } = new URL(request.url)
