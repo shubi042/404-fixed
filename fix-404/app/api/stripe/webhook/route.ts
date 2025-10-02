@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
 import { sendOwnerBookingEmail, sendCustomerBookingEmail, sendContractorBookingEmail } from "@/lib/email"
 import { addBookingToSheet } from "@/lib/sheets-api"
+import { assignContractor } from "@/lib/contractor-assignment"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -71,31 +72,32 @@ export async function POST(request: NextRequest) {
 				sessionId: sessionWithLineItems.id,
 			}
 
-			// Your actual contractors - replace with real email addresses
-			// TODO: Update these with your actual contractor emails from the subcontractors sheet
-			const contractors = [
-				{ name: "Contractor 1", email: "services@tidymate.ca", phone: "(416) 555-0001", specialties: ["airbnb", "residential"] },
-				{ name: "Contractor 2", email: "services@tidymate.ca", phone: "(416) 555-0002", specialties: ["post-construction", "commercial"] },
-				{ name: "Contractor 3", email: "services@tidymate.ca", phone: "(416) 555-0003", specialties: ["airbnb", "residential"] },
-				{ name: "Contractor 4", email: "services@tidymate.ca", phone: "(416) 555-0004", specialties: ["post-construction"] }
-			]
-
-			// Simple assignment logic
-			let assignedContractor = contractors[0] // Default to first contractor
-			if (ownerPayload.serviceName.toLowerCase().includes("post-construction")) {
-				assignedContractor = contractors.find(c => c.specialties.includes("post-construction")) || contractors[1]
-			} else {
-				// Airbnb/Residential services
-				assignedContractor = contractors.find(c => c.specialties.includes("airbnb") || c.specialties.includes("residential")) || contractors[0]
+			// Automatic contractor assignment from Google Sheets
+			console.log(`🔍 Assigning contractor for: ${ownerPayload.serviceName} on ${ownerPayload.date}`)
+			
+			// Determine number of cleaners needed based on service
+			let cleanersNeeded = 1
+			if (ownerPayload.serviceName.includes("4+ Bedroom") || ownerPayload.serviceName.includes("Large")) {
+				cleanersNeeded = 2
 			}
+			
+			const assignment = await assignContractor(
+				ownerPayload.serviceName, 
+				ownerPayload.date, 
+				cleanersNeeded
+			)
 
-			console.log(`✅ Contractor assigned: ${assignedContractor.name} (${assignedContractor.email})`)
-
-			const contractorAssignment = {
-				contractorName: assignedContractor.name,
-				contractorEmail: assignedContractor.email,
-				contractorPhone: assignedContractor.phone,
-				estimatedDuration: 3
+			let contractorAssignment = null
+			if (assignment) {
+				console.log(`✅ Contractor auto-assigned: ${assignment.contractorName} (${assignment.contractorEmail})`)
+				contractorAssignment = {
+					contractorName: assignment.contractorName,
+					contractorEmail: assignment.contractorEmail,
+					contractorPhone: assignment.contractorPhone,
+					estimatedDuration: assignment.estimatedDuration
+				}
+			} else {
+				console.warn("⚠️ No contractor could be automatically assigned - manual assignment required")
 			}
 
 			// Send emails to all parties
@@ -105,19 +107,24 @@ export async function POST(request: NextRequest) {
 				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
 			}
 
-			// Send email to assigned contractor (REAL contractor from your sheet)
-			await sendContractorBookingEmail(assignedContractor.email, assignedContractor.name, {
-				service: ownerPayload.serviceName,
-				addons: ownerPayload.addons.join(", "),
-				estimatedDuration: "3 hours",
-				date: ownerPayload.date,
-				time: ownerPayload.time,
-				address: ownerPayload.address,
-				instructions: metadata.instructions || "",
-				customerName: ownerPayload.customerName,
-				phone: ownerPayload.phone,
-				customerEmail: ownerPayload.customerEmail
-			})
+			// Send email to assigned contractor (if one was assigned)
+			if (contractorAssignment) {
+				await sendContractorBookingEmail(contractorAssignment.contractorEmail, contractorAssignment.contractorName, {
+					service: ownerPayload.serviceName,
+					addons: ownerPayload.addons.join(", "),
+					estimatedDuration: `${contractorAssignment.estimatedDuration} hours`,
+					date: ownerPayload.date,
+					time: ownerPayload.time,
+					address: ownerPayload.address,
+					instructions: metadata.instructions || "",
+					customerName: ownerPayload.customerName,
+					phone: ownerPayload.phone,
+					customerEmail: ownerPayload.customerEmail
+				})
+				console.log(`📧 Contractor notification sent to: ${contractorAssignment.contractorEmail}`)
+			} else {
+				console.log("📧 No contractor email sent - manual assignment required")
+			}
 
 			// Add booking to Google Sheets
 			await addBookingToSheet({
@@ -134,16 +141,20 @@ export async function POST(request: NextRequest) {
 				instructions: metadata.instructions || "",
 				sessionId: ownerPayload.sessionId || "",
 				paymentStatus: "Completed",
-				contractorName: assignedContractor.name,
-				contractorEmail: assignedContractor.email,
-				contractorPhone: assignedContractor.phone,
-				estimatedDuration: "3 hours"
+				contractorName: contractorAssignment?.contractorName || "MANUAL ASSIGNMENT REQUIRED",
+				contractorEmail: contractorAssignment?.contractorEmail || "N/A",
+				contractorPhone: contractorAssignment?.contractorPhone || "N/A",
+				estimatedDuration: contractorAssignment ? `${contractorAssignment.estimatedDuration} hours` : "TBD"
 			})
 
 			sendOwnerViaFunction(ownerPayload)
 
 			console.log("✅ Booking processed and emails sent to all parties")
-			console.log(`✅ REAL contractor assigned from your sheet: ${assignedContractor.name} (${assignedContractor.email})`)
+			if (contractorAssignment) {
+				console.log(`✅ Contractor auto-assigned from Google Sheets: ${contractorAssignment.contractorName} (${contractorAssignment.contractorEmail})`)
+			} else {
+				console.log("⚠️ No contractor auto-assigned - manual assignment required")
+			}
 
 		} catch (err) {
 			console.error("Error handling checkout.session.completed:", err)
