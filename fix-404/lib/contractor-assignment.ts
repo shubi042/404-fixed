@@ -28,9 +28,21 @@ const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL
 const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
 
 async function getContractorsFromSheet(): Promise<Contractor[]> {
-  // For now, use fallback contractors to ensure deployment works
-  // Google Sheets integration can be enabled after deployment
-  console.log('📋 Using fallback contractors for stable deployment')
+  // Try to get contractors from Google Sheets first
+  try {
+    const { getContractorsFromSheet: getSheetsContractors } = await import('@/lib/sheets-api')
+    const sheetsContractors = await getSheetsContractors()
+    
+    if (sheetsContractors && sheetsContractors.length > 0) {
+      console.log(`✅ Loaded ${sheetsContractors.length} contractors from Google Sheets`)
+      return sheetsContractors
+    }
+  } catch (error: any) {
+    console.warn('Failed to load from Google Sheets, using fallback:', error?.message || error)
+  }
+  
+  // Fallback to hardcoded contractors if Google Sheets fails
+  console.log('📋 Using fallback contractors')
   return getFallbackContractors()
 }
 
@@ -39,7 +51,7 @@ function getFallbackContractors(): Contractor[] {
     {
       id: "contractor-001",
       name: "Maria Santos",
-      email: "maria@tidymate.ca",
+      email: "services+maria@tidymate.ca", // Fallback to main email with tag
       phone: "(416) 555-0101",
       specialties: ["airbnb", "residential", "deep-clean"],
       maxJobsPerDay: 3,
@@ -49,7 +61,7 @@ function getFallbackContractors(): Contractor[] {
     {
       id: "contractor-002", 
       name: "David Chen",
-      email: "david@tidymate.ca",
+      email: "services+david@tidymate.ca", // Fallback to main email with tag
       phone: "(416) 555-0102",
       specialties: ["post-construction", "commercial", "heavy-duty"],
       maxJobsPerDay: 2,
@@ -59,7 +71,7 @@ function getFallbackContractors(): Contractor[] {
     {
       id: "contractor-003",
       name: "Sarah Johnson", 
-      email: "sarah@tidymate.ca",
+      email: "services+sarah@tidymate.ca", // Fallback to main email with tag
       phone: "(416) 555-0103",
       specialties: ["airbnb", "residential", "move-out"],
       maxJobsPerDay: 4,
@@ -69,7 +81,7 @@ function getFallbackContractors(): Contractor[] {
     {
       id: "contractor-004",
       name: "Ahmed Hassan",
-      email: "ahmed@tidymate.ca", 
+      email: "services+ahmed@tidymate.ca", // Fallback to main email with tag
       phone: "(416) 555-0104",
       specialties: ["post-construction", "commercial", "industrial"],
       maxJobsPerDay: 2,
@@ -154,10 +166,11 @@ export async function assignContractor(serviceType: string, preferredDate: strin
   }
 }
 
-export function getContractorList(): Contractor[] {
-  return contractors
+export async function getContractorList(): Promise<Contractor[]> {
+  return await getContractorsFromSheet()
 }
 
-export function getContractorById(contractorId: string): Contractor | null {
+export async function getContractorById(contractorId: string): Promise<Contractor | null> {
+  const contractors = await getContractorsFromSheet()
   return contractors.find(c => c.id === contractorId) || null
 }

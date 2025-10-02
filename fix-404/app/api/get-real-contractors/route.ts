@@ -3,7 +3,15 @@ import { type NextRequest, NextResponse } from "next/server"
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
+export async function GET(request: NextRequest) {
+	return handleContractorRequest(request)
+}
+
 export async function POST(request: NextRequest) {
+	return handleContractorRequest(request)
+}
+
+async function handleContractorRequest(request: NextRequest) {
 	try {
 		console.log("📊 Accessing real subcontractors from Google Sheets...")
 

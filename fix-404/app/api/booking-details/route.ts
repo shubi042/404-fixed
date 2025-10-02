@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     }
 
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2024-06-20",
+      apiVersion: "2025-09-30.clover",
     })
 
     const { searchParams } = new URL(request.url)
