@@ -26,19 +26,27 @@ export async function POST(request: NextRequest) {
 
 		const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" })
 
-		let sessionId: string | null = null
+    let sessionId: string | null = null
 		const { searchParams } = new URL(request.url)
 		sessionId = searchParams.get("session_id")
+    let paymentIntentId: string | null = searchParams.get("payment_intent")
 		if (!sessionId) {
 			try {
 				const body = await request.json()
-				sessionId = body?.sessionId || body?.session_id || null
+        sessionId = body?.sessionId || body?.session_id || null
+        paymentIntentId = paymentIntentId || body?.payment_intent || body?.paymentIntent || null
 			} catch (_) {}
 		}
 
-		if (!sessionId) {
-			return NextResponse.json({ error: "Session ID required" }, { status: 400 })
-		}
+    // If we only have a payment_intent, resolve the latest Checkout Session for it
+    if (!sessionId && paymentIntentId) {
+      const sessionsList = await stripe.checkout.sessions.list({ payment_intent: paymentIntentId, limit: 1 })
+      sessionId = sessionsList.data?.[0]?.id || null
+    }
+
+    if (!sessionId) {
+      return NextResponse.json({ error: "Session ID or payment_intent required" }, { status: 400 })
+    }
 
 		const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["line_items", "customer"] })
 		if (session.payment_status !== "paid") {
