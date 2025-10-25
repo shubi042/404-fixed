@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
-import { sendOwnerBookingEmail } from "@/lib/email"
+import { sendOwnerBookingEmail, sendCustomerBookingEmail } from "@/lib/email"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -67,8 +67,30 @@ export async function POST(request: NextRequest) {
 
 		await sendOwnerBookingEmail(ownerPayload)
 
+		// Also send customer confirmation if we have a real email
+		if (ownerPayload.customerEmail && ownerPayload.customerEmail !== "unknown@example.com") {
+			await sendCustomerBookingEmail({
+				customerName: ownerPayload.customerName,
+				customerEmail: ownerPayload.customerEmail,
+				phone: ownerPayload.phone,
+				address: ownerPayload.address,
+				date: ownerPayload.date,
+				time: ownerPayload.time,
+				serviceName: ownerPayload.serviceName,
+				addons,
+				totalAmountCents: ownerPayload.totalAmountCents,
+				currency: ownerPayload.currency,
+				sessionId: ownerPayload.sessionId
+			}, ownerPayload.customerEmail)
+		}
+
 		const origin = request.headers.get("origin") || new URL(request.url).origin
-		sendOwnerViaFunction(origin, ownerPayload)
+		sendOwnerViaFunction(origin, { type: "booking", ...ownerPayload })
+
+		// SMTP fallback for customer if Resend is not configured
+		if (!process.env.RESEND_API_KEY && ownerPayload.customerEmail && ownerPayload.customerEmail !== "unknown@example.com") {
+			await sendOwnerViaFunction(origin, { type: "booking", target: "customer", to: ownerPayload.customerEmail, ...ownerPayload })
+		}
 
 		return NextResponse.json({ ok: true })
 	} catch (error: any) {

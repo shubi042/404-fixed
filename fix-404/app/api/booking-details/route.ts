@@ -24,7 +24,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       service: session.metadata?.service,
       amount: session.amount_total,
-      customerEmail: session.customer_email,
+      currency: session.currency,
+      customerEmail: session.customer_email || session.metadata?.customerEmail,
+      customerName: session.metadata?.customerName,
+      phone: session.metadata?.phone,
+      address: session.metadata?.address,
+      date: session.metadata?.date,
+      time: session.metadata?.time,
+      instructions: session.metadata?.instructions,
+      addons: session.metadata?.addons,
       paymentStatus: session.payment_status,
     })
   } catch (error) {
