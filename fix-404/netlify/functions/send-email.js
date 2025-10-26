@@ -59,19 +59,35 @@ exports.handler = async function (event) {
 				<p><strong>Message:</strong><br/>${(body.message || "").replace(/\n/g, "<br/>")}</p>
 			`
 		} else if (type === "booking") {
-			subject = subject || `New Booking: ${body.serviceName || "Cleaning Service"} for ${body.customerName || "Customer"}`
-			html = `
-				<h2>New Booking Received</h2>
-				<p><strong>Service:</strong> ${body.serviceName || ""}</p>
-				<p><strong>Add-ons:</strong> ${(body.addons || []).join(", ") || "None"}</p>
-				<p><strong>Total:</strong> ${body.total || "(see Stripe)"}</p>
-				<hr/>
-				<p><strong>Customer:</strong> ${body.customerName || ""} (${body.customerEmail || ""})</p>
-				<p><strong>Phone:</strong> ${body.phone || ""}</p>
-				<p><strong>Address:</strong> ${body.address || ""}</p>
-				<p><strong>Preferred Date & Time:</strong> ${body.date || ""} ${body.time ? "at " + body.time : ""}</p>
-				<p><strong>Stripe Session:</strong> ${body.sessionId || ""}</p>
-			`
+			const isCustomer = body.target === "customer"
+			if (isCustomer) {
+				to = body.to || body.customerEmail || MAIL_TO
+				subject = subject || `Your TidyMate Booking is Confirmed - ${body.serviceName || "Cleaning Service"}`
+				html = `
+					<h2>Booking Confirmed - Thank you, ${body.customerName || "Customer"}!</h2>
+					<p>Your cleaning service has been booked and payment processed successfully.</p>
+					<p><strong>Service:</strong> ${body.serviceName || ""}</p>
+					<p><strong>Add-ons:</strong> ${(body.addons || []).join(", ") || "None"}</p>
+					<p><strong>Requested Date:</strong> ${body.date || ""}</p>
+					<p><strong>Preferred Time:</strong> ${body.time || ""}</p>
+					<p><strong>Service Address:</strong> ${body.address || ""}</p>
+					${body.sessionId ? `<p><strong>Booking Reference:</strong> ${body.sessionId}</p>` : ""}
+				`
+			} else {
+				subject = subject || `New Booking: ${body.serviceName || "Cleaning Service"} for ${body.customerName || "Customer"}`
+				html = `
+					<h2>New Booking Received</h2>
+					<p><strong>Service:</strong> ${body.serviceName || ""}</p>
+					<p><strong>Add-ons:</strong> ${(body.addons || []).join(", ") || "None"}</p>
+					<p><strong>Total:</strong> ${body.total || "(see Stripe)"}</p>
+					<hr/>
+					<p><strong>Customer:</strong> ${body.customerName || ""} (${body.customerEmail || ""})</p>
+					<p><strong>Phone:</strong> ${body.phone || ""}</p>
+					<p><strong>Address:</strong> ${body.address || ""}</p>
+					<p><strong>Preferred Date & Time:</strong> ${body.date || ""} ${body.time ? "at " + body.time : ""}</p>
+					<p><strong>Stripe Session:</strong> ${body.sessionId || ""}</p>
+				`
+			}
 		} else {
 			return { statusCode: 400, body: JSON.stringify({ error: "Invalid type" }) }
 		}

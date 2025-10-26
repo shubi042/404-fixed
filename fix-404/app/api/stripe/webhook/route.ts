@@ -1,18 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
 import { sendOwnerBookingEmail, sendCustomerBookingEmail, sendContractorBookingEmail } from "@/lib/email"
+import { addBookingToSheet } from "@/lib/sheets-api"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
-async function sendOwnerViaFunction(payload: any) {
+async function sendViaFunction(payload: any) {
 	try {
 		const baseUrl = process.env.PUBLIC_BASE_URL
 		if (!baseUrl) return
 		await fetch(`${baseUrl}/.netlify/functions/send-email`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ type: "booking", ...payload }),
+			body: JSON.stringify(payload),
 		})
 	} catch (e) {
 		console.error("SMTP fallback send failed:", e)
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
 				totalAmountCents: typeof sessionWithLineItems.amount_total === "number" ? sessionWithLineItems.amount_total : undefined,
 				currency: sessionWithLineItems.currency || undefined,
 				sessionId: sessionWithLineItems.id,
+				instructions: String(metadata.instructions || ""),
 			}
 
 			// Your actual contractors - replace with real email addresses
@@ -97,11 +99,18 @@ export async function POST(request: NextRequest) {
 				estimatedDuration: 3
 			}
 
-			// Send emails to all parties
+			// Send emails to all parties (Resend)
 			await sendOwnerBookingEmail(ownerPayload, contractorAssignment)
-			
 			if (ownerPayload.customerEmail && ownerPayload.customerEmail !== "unknown@example.com") {
 				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
+			}
+
+			// SMTP fallback via Netlify Function if Resend not configured
+			if (!process.env.RESEND_API_KEY) {
+				await sendViaFunction({ type: "booking", ...ownerPayload })
+				if (ownerPayload.customerEmail && ownerPayload.customerEmail !== "unknown@example.com") {
+					await sendViaFunction({ type: "booking", target: "customer", to: ownerPayload.customerEmail, ...ownerPayload })
+				}
 			}
 
 			// Send email to assigned contractor (REAL contractor from your sheet)
@@ -139,7 +148,10 @@ export async function POST(request: NextRequest) {
 				estimatedDuration: "3 hours"
 			})
 
-			sendOwnerViaFunction(ownerPayload)
+			// Best-effort owner fallback regardless
+			if (!process.env.RESEND_API_KEY) {
+				await sendViaFunction({ type: "booking", ...ownerPayload })
+			}
 
 			console.log("✅ Booking processed and emails sent to all parties")
 			console.log(`✅ REAL contractor assigned from your sheet: ${assignedContractor.name} (${assignedContractor.email})`)

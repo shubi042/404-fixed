@@ -28,6 +28,19 @@ export async function POST(request: NextRequest) {
 			return phone.replace(/\D/g, "").substring(0, 15)
 		}
 
+		// Prepare metadata and safe values for Stripe Checkout Session
+		const baseUrl = process.env.PUBLIC_BASE_URL || "https://tidymate.ca"
+		const addonNamesCsv = Array.isArray(addons)
+			? addons.map((addon: any) => cleanString(addon?.name || "")).filter(Boolean).join(", ")
+			: ""
+
+		const customerName = cleanString(`${customerInfo.firstName} ${customerInfo.lastName}`)
+		const customerEmail = String(customerInfo.email || "").trim()
+		const address = cleanString(String(customerInfo.address || ""))
+		const preferredDate = cleanString(String(customerInfo.date || ""))
+		const preferredTime = cleanString(String(customerInfo.time || ""))
+		const instructions = cleanString(String(customerInfo.instructions || ""))
+
 		// Create Stripe Checkout Session with absolutely clean data
 		const session = await stripe.checkout.sessions.create({
 			payment_method_types: ["card"],
@@ -56,13 +69,33 @@ export async function POST(request: NextRequest) {
 				})),
 			],
 			mode: "payment",
-			success_url: `https://tidymate.ca/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `https://tidymate.ca/booking`,
+			success_url: `${baseUrl}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `${baseUrl}/booking`,
 			customer_email: customerInfo.email,
 			metadata: {
-				name: cleanString(`${customerInfo.firstName} ${customerInfo.lastName}`),
+				// Standardized fields consumed by webhook and notification APIs
+				customerName,
+				customerEmail,
 				phone: cleanPhone(customerInfo.phone),
+				address,
+				date: preferredDate,
+				time: preferredTime,
+				instructions,
 				service: cleanString(service.name),
+				addons: addonNamesCsv,
+			},
+			payment_intent_data: {
+				metadata: {
+					customerName,
+					customerEmail,
+					phone: cleanPhone(customerInfo.phone),
+					address,
+					date: preferredDate,
+					time: preferredTime,
+					instructions,
+					service: cleanString(service.name),
+					addons: addonNamesCsv,
+				},
 			},
 		})
 

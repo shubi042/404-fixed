@@ -13,6 +13,14 @@ export default function BookingSuccessPage() {
   const [bookingDetails, setBookingDetails] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
+  const prettyTime = (t?: string) => {
+    if (!t) return ""
+    if (t === "morning") return "Morning (8AM - 12PM)"
+    if (t === "afternoon") return "Afternoon (12PM - 5PM)"
+    if (t === "evening") return "Evening (5PM - 8PM)"
+    return t
+  }
+
   useEffect(() => {
     if (sessionId) {
       // Fetch booking details from Stripe session
@@ -132,6 +140,24 @@ export default function BookingSuccessPage() {
                     <span>Service:</span>
                     <span className="font-medium">{bookingDetails.service}</span>
                   </div>
+                  {bookingDetails.date && (
+                    <div className="flex justify-between">
+                      <span>Date:</span>
+                      <span className="font-medium">{bookingDetails.date}</span>
+                    </div>
+                  )}
+                  {bookingDetails.time && (
+                    <div className="flex justify-between">
+                      <span>Time:</span>
+                      <span className="font-medium">{prettyTime(bookingDetails.time)}</span>
+                    </div>
+                  )}
+                  {bookingDetails.address && (
+                    <div className="flex justify-between">
+                      <span>Service Address:</span>
+                      <span className="font-medium text-right">{bookingDetails.address}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Amount Paid:</span>
                     <span className="font-medium">${(bookingDetails.amount / 100).toFixed(2)} CAD</span>
