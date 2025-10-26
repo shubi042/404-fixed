@@ -48,12 +48,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Session ID or payment_intent required" }, { status: 400 })
     }
 
-		const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["line_items", "customer"] })
+		const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["line_items", "customer", "payment_intent"] })
 		if (session.payment_status !== "paid") {
 			return NextResponse.json({ skipped: true, reason: "Session not paid" }, { status: 200 })
 		}
 
-		const metadata = session.metadata || {}
+		const pi: any = session.payment_intent || {}
+		const metadata = { ...(session.metadata || {}), ...(pi?.metadata || {}) }
 		const addons = (metadata.addons ? String(metadata.addons) : "")
 			.split(",")
 			.map((s) => s.trim())

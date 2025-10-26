@@ -26,20 +26,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Session ID or payment_intent required" }, { status: 400 })
     }
 
-    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['payment_intent'] })
+
+    const pi: any = session.payment_intent || {}
+    const meta = {
+      ...(session.metadata || {}),
+      ...(pi?.metadata || {}),
+    }
 
     return NextResponse.json({
-      service: session.metadata?.service,
+      service: meta.service,
       amount: session.amount_total,
       currency: session.currency,
-      customerEmail: session.customer_email || session.metadata?.customerEmail,
-      customerName: session.metadata?.customerName,
-      phone: session.metadata?.phone,
-      address: session.metadata?.address,
-      date: session.metadata?.date,
-      time: session.metadata?.time,
-      instructions: session.metadata?.instructions,
-      addons: session.metadata?.addons,
+      customerEmail: session.customer_email || meta.customerEmail,
+      customerName: meta.customerName,
+      phone: meta.phone,
+      address: meta.address,
+      date: meta.date,
+      time: meta.time,
+      instructions: meta.instructions,
+      addons: meta.addons,
       paymentStatus: session.payment_status,
     })
   } catch (error) {

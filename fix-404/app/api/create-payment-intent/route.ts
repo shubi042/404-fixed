@@ -84,6 +84,19 @@ export async function POST(request: NextRequest) {
 				service: cleanString(service.name),
 				addons: addonNamesCsv,
 			},
+			payment_intent_data: {
+				metadata: {
+					customerName,
+					customerEmail,
+					phone: cleanPhone(customerInfo.phone),
+					address,
+					date: preferredDate,
+					time: preferredTime,
+					instructions,
+					service: cleanString(service.name),
+					addons: addonNamesCsv,
+				},
+			},
 		})
 
 		return NextResponse.json({ sessionId: session.id })
