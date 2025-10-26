@@ -13,6 +13,14 @@ export default function BookingSuccessPage() {
   const [bookingDetails, setBookingDetails] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
+  const prettyTime = (t?: string) => {
+    if (!t) return ""
+    if (t === "morning") return "Morning (8AM - 12PM)"
+    if (t === "afternoon") return "Afternoon (12PM - 5PM)"
+    if (t === "evening") return "Evening (5PM - 8PM)"
+    return t
+  }
+
   useEffect(() => {
     if (sessionId) {
       // Fetch booking details from Stripe session
@@ -141,7 +149,7 @@ export default function BookingSuccessPage() {
                   {bookingDetails.time && (
                     <div className="flex justify-between">
                       <span>Time:</span>
-                      <span className="font-medium">{bookingDetails.time}</span>
+                      <span className="font-medium">{prettyTime(bookingDetails.time)}</span>
                     </div>
                   )}
                   {bookingDetails.address && (
