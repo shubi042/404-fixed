@@ -24,19 +24,25 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: "Stripe secret key not configured" }, { status: 500 })
 		}
 
-		const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" })
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" })
+
+    // Read JSON body once (to allow optional overrides)
+    let bodyData: any = null
+    if (request.headers.get("content-type")?.includes("application/json")) {
+      try {
+        const raw = await request.text()
+        bodyData = raw ? JSON.parse(raw) : null
+      } catch {}
+    }
 
     let sessionId: string | null = null
 		const { searchParams } = new URL(request.url)
 		sessionId = searchParams.get("session_id")
     let paymentIntentId: string | null = searchParams.get("payment_intent")
-		if (!sessionId) {
-			try {
-				const body = await request.json()
-        sessionId = body?.sessionId || body?.session_id || null
-        paymentIntentId = paymentIntentId || body?.payment_intent || body?.paymentIntent || null
-			} catch (_) {}
-		}
+    if (!sessionId && bodyData) {
+      sessionId = bodyData?.sessionId || bodyData?.session_id || null
+      paymentIntentId = paymentIntentId || bodyData?.payment_intent || bodyData?.paymentIntent || null
+    }
 
     // If we only have a payment_intent, resolve the latest Checkout Session for it
     if (!sessionId && paymentIntentId) {
@@ -53,20 +59,26 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ skipped: true, reason: "Session not paid" }, { status: 200 })
 		}
 
-		const pi: any = session.payment_intent || {}
-		const metadata = { ...(session.metadata || {}), ...(pi?.metadata || {}) }
+    const pi: any = session.payment_intent || {}
+    const metadata = { ...(session.metadata || {}), ...(pi?.metadata || {}) }
+    const overrideDate = bodyData?.date
+    const overrideTime = bodyData?.time
+    const overrideAddress = bodyData?.address
+    const effectiveDate = String(overrideDate || metadata.date || "")
+    const effectiveTime = String(overrideTime || metadata.time || "")
+    const effectiveAddress = String(overrideAddress || metadata.address || "")
 		const addons = (metadata.addons ? String(metadata.addons) : "")
 			.split(",")
 			.map((s) => s.trim())
 			.filter(Boolean)
 
-		const ownerPayload = {
+    const ownerPayload = {
 			customerName: String(metadata.customerName || "Unknown"),
 			customerEmail: String(session.customer_email || metadata.customerEmail || "unknown@example.com"),
 			phone: String(metadata.phone || ""),
-			address: String(metadata.address || ""),
-			date: String(metadata.date || ""),
-			time: String(metadata.time || ""),
+      address: effectiveAddress,
+      date: effectiveDate,
+      time: effectiveTime,
 			serviceName: String(metadata.service || session?.line_items?.data?.[0]?.description || "Cleaning Service"),
 			addons,
 			totalAmountCents: typeof session.amount_total === "number" ? session.amount_total : undefined,
@@ -74,6 +86,22 @@ export async function POST(request: NextRequest) {
 			sessionId: session.id,
 			instructions: String(metadata.instructions || ""),
 		}
+
+    // If overrides provided, persist them to the Payment Intent metadata for future viewing
+    if (overrideDate || overrideTime || overrideAddress) {
+      const piId = typeof session.payment_intent === 'string' ? session.payment_intent : (session.payment_intent as any).id
+      const updatedMeta = {
+        ...(pi?.metadata || {}),
+        ...(overrideDate ? { date: effectiveDate } : {}),
+        ...(overrideTime ? { time: effectiveTime } : {}),
+        ...(overrideAddress ? { address: effectiveAddress } : {}),
+      }
+      try {
+        await stripe.paymentIntents.update(piId, { metadata: updatedMeta })
+      } catch (e) {
+        console.error('Failed to persist override metadata to PaymentIntent:', e)
+      }
+    }
 
 		await sendOwnerBookingEmail(ownerPayload)
 
