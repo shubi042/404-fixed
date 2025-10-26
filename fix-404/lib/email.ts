@@ -16,6 +16,7 @@ export type OwnerBookingEmailPayload = {
 	totalAmountCents?: number
 	currency?: string
 	sessionId?: string
+  instructions?: string
 }
 
 export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload, contractorInfo?: any) {
@@ -62,13 +63,13 @@ export async function sendOwnerBookingEmail(payload: OwnerBookingEmailPayload, c
 				${payload.sessionId ? `<p><strong>Payment Session:</strong> ${payload.sessionId}</p>` : ""}
 			</div>
 			
-			<div style="background: #fef7cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+            <div style="background: #fef7cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
 				<h3 style="margin-top: 0; color: #92400e;">👤 Customer Information</h3>
 				<p><strong>Name:</strong> ${payload.customerName}</p>
 				<p><strong>Email:</strong> ${payload.customerEmail}</p>
 				<p><strong>Phone:</strong> ${payload.phone}</p>
 				<p><strong>Address:</strong> ${payload.address}</p>
-				<p><strong>Special Instructions:</strong> ${payload.address}</p>
+              ${payload.instructions ? `<p><strong>Special Instructions:</strong> ${payload.instructions}</p>` : ''}
 			</div>
 			
 			<div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">

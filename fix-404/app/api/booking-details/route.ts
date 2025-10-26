@@ -13,10 +13,17 @@ export async function GET(request: NextRequest) {
     })
 
     const { searchParams } = new URL(request.url)
-    const sessionId = searchParams.get("session_id")
+    let sessionId: string | null = searchParams.get("session_id")
+    const paymentIntentId: string | null = searchParams.get("payment_intent")
+
+    // If only payment_intent is provided, resolve the related Checkout Session
+    if (!sessionId && paymentIntentId) {
+      const sessionsList = await stripe.checkout.sessions.list({ payment_intent: paymentIntentId, limit: 1 })
+      sessionId = sessionsList.data?.[0]?.id || null
+    }
 
     if (!sessionId) {
-      return NextResponse.json({ error: "Session ID required" }, { status: 400 })
+      return NextResponse.json({ error: "Session ID or payment_intent required" }, { status: 400 })
     }
 
     const session = await stripe.checkout.sessions.retrieve(sessionId)

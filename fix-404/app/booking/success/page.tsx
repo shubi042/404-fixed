@@ -132,6 +132,24 @@ export default function BookingSuccessPage() {
                     <span>Service:</span>
                     <span className="font-medium">{bookingDetails.service}</span>
                   </div>
+                  {bookingDetails.date && (
+                    <div className="flex justify-between">
+                      <span>Date:</span>
+                      <span className="font-medium">{bookingDetails.date}</span>
+                    </div>
+                  )}
+                  {bookingDetails.time && (
+                    <div className="flex justify-between">
+                      <span>Time:</span>
+                      <span className="font-medium">{bookingDetails.time}</span>
+                    </div>
+                  )}
+                  {bookingDetails.address && (
+                    <div className="flex justify-between">
+                      <span>Service Address:</span>
+                      <span className="font-medium text-right">{bookingDetails.address}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Amount Paid:</span>
                     <span className="font-medium">${(bookingDetails.amount / 100).toFixed(2)} CAD</span>
