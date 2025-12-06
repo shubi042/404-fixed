@@ -66,7 +66,10 @@ export async function POST(request: NextRequest) {
 			},
 		})
 
-		return NextResponse.json({ sessionId: session.id })
+		return NextResponse.json({
+			sessionId: session.id,
+			checkoutUrl: session.url,
+		})
 	} catch (error: any) {
 		console.error("Error creating payment intent:", error)
 		return NextResponse.json({ error: error?.message || "Failed to create payment intent" }, { status: 500 })
