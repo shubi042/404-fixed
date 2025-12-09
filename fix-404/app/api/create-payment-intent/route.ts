@@ -66,7 +66,11 @@ export async function POST(request: NextRequest) {
 			},
 		})
 
-		return NextResponse.json({ sessionId: session.id })
+		if (!session.url) {
+			return NextResponse.json({ error: "Stripe did not return a checkout URL" }, { status: 500 })
+		}
+
+		return NextResponse.json({ sessionId: session.id, url: session.url })
 	} catch (error: any) {
 		console.error("Error creating payment intent:", error)
 		return NextResponse.json({ error: error?.message || "Failed to create payment intent" }, { status: 500 })

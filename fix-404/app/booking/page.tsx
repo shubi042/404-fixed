@@ -9,10 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { loadStripe } from "@stripe/stripe-js"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 export default function BookingPage() {
   const [selectedService, setSelectedService] = useState("")
@@ -186,13 +183,11 @@ export default function BookingPage() {
         throw new Error(data?.error || "Failed to start checkout")
       }
 
-      const stripe = await stripePromise
-      if (!stripe) throw new Error("Stripe failed to load")
-
-      const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId })
-      if (error) {
-        throw error
+      if (!data?.url) {
+        throw new Error("Checkout session missing redirect URL")
       }
+
+      window.location.assign(data.url)
     } catch (error: any) {
       console.error("Payment error:", error)
       alert(error?.message || "Payment failed. Please try again.")
