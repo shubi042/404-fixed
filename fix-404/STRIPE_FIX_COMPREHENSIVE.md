@@ -19,7 +19,7 @@ The Stripe error was caused by:
 
 ## 🛠️ **COMPREHENSIVE FIXES IMPLEMENTED**
 
-### **1. Server-Side Validation (`/api/create-payment-intent/route.ts`)**
+### **1. Server-Side Validation (`/api/create-checkout-session/route.ts`)**
 
 #### ✅ **Input Sanitization Function**
 ```typescript

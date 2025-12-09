@@ -9,10 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { loadStripe } from "@stripe/stripe-js"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 export default function BookingPage() {
   const [selectedService, setSelectedService] = useState("")
@@ -167,14 +164,12 @@ export default function BookingPage() {
     try {
       const chosenService = servicePricing[selectedService as keyof typeof servicePricing]
 
-      const response = await fetch("/api/create-payment-intent", {
+      const response = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: calculateTotal() * 100,
-          currency: "cad",
           service: chosenService,
           addons: selectedAddons.map((id) => addons.find((a) => a.id === id)).filter(Boolean),
           customerInfo: formData,
@@ -186,13 +181,11 @@ export default function BookingPage() {
         throw new Error(data?.error || "Failed to start checkout")
       }
 
-      const stripe = await stripePromise
-      if (!stripe) throw new Error("Stripe failed to load")
-
-      const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId })
-      if (error) {
-        throw error
+      if (!data?.url) {
+        throw new Error("Checkout session missing redirect URL")
       }
+
+      window.location.assign(data.url)
     } catch (error: any) {
       console.error("Payment error:", error)
       alert(error?.message || "Payment failed. Please try again.")

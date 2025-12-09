@@ -87,7 +87,7 @@ TEST_URL=https://your-domain.com node debug-real-payload.js
 
 ## 📋 **UPDATED FILES**
 
-1. **`/app/api/create-payment-intent/route.ts`** - Ultra-conservative sanitization
+1. **`/app/api/create-checkout-session/route.ts`** - Ultra-conservative sanitization
 2. **`/app/booking/page.tsx`** - Enhanced client validation  
 3. **Debug scripts** - `debug-stripe-exact.js`, `debug-real-payload.js`
 
