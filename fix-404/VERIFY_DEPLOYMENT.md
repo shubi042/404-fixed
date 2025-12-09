@@ -88,7 +88,7 @@ After deployment, check these:
 3. **Verify the files show the changes**:
    - `app/consultation/page.tsx` should be DELETED
    - `components/navigation.tsx` should have NO consultation links
-   - `app/api/create-payment-intent/route.ts` should have dashes, not bullets
+   - `app/api/create-checkout-session/route.ts` should have dashes, not bullets
 
 ---
 

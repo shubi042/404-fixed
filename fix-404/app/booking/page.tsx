@@ -164,14 +164,12 @@ export default function BookingPage() {
     try {
       const chosenService = servicePricing[selectedService as keyof typeof servicePricing]
 
-      const response = await fetch("/api/create-payment-intent", {
+      const response = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: calculateTotal() * 100,
-          currency: "cad",
           service: chosenService,
           addons: selectedAddons.map((id) => addons.find((a) => a.id === id)).filter(Boolean),
           customerInfo: formData,
