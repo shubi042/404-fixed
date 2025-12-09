@@ -16,6 +16,9 @@ export async function POST(request: NextRequest) {
 		})
 
 		const { amount, currency, service, addons, customerInfo } = await request.json()
+		if (!customerInfo || typeof customerInfo !== "object") {
+			return NextResponse.json({ error: "Customer information is required" }, { status: 400 })
+		}
 
 		// Clean all strings to remove ANY characters that could cause validation issues
 		const cleanString = (str: string) => {
@@ -26,6 +29,14 @@ export async function POST(request: NextRequest) {
 		const cleanPhone = (phone: string) => {
 			if (!phone) return ""
 			return phone.replace(/\D/g, "").substring(0, 15)
+		}
+
+		const normalizeEmail = (email: string) => (email || "").trim().toLowerCase()
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+		const normalizedEmail = normalizeEmail(customerInfo.email)
+
+		if (!normalizedEmail || !emailRegex.test(normalizedEmail)) {
+			return NextResponse.json({ error: "Please enter a valid email address so we can send your receipt." }, { status: 400 })
 		}
 
 		// Create Stripe Checkout Session with absolutely clean data
@@ -58,11 +69,12 @@ export async function POST(request: NextRequest) {
 			mode: "payment",
 			success_url: `https://tidymate.ca/booking/success?session_id={CHECKOUT_SESSION_ID}`,
 			cancel_url: `https://tidymate.ca/booking`,
-			customer_email: customerInfo.email,
+			customer_email: normalizedEmail,
 			metadata: {
 				name: cleanString(`${customerInfo.firstName} ${customerInfo.lastName}`),
 				phone: cleanPhone(customerInfo.phone),
 				service: cleanString(service.name),
+				customerEmail: normalizedEmail,
 			},
 		})
 

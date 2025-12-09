@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer")
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 exports.handler = async function (event) {
 	// CORS preflight
@@ -41,13 +42,15 @@ exports.handler = async function (event) {
 		})
 
 		const body = JSON.parse(event.body || "{}")
+		const sanitizeEmail = (email) => (typeof email === "string" ? email.trim().toLowerCase() : "")
+		const replyToCandidate = sanitizeEmail(body.email)
 		const type = body.type || "contact"
 
 		let subject = body.subject || ""
 		let html = ""
 		let to = body.to || MAIL_TO
 		const from = SMTP_USER // enforce sender matches mailbox to avoid rejection
-		const replyTo = body.email && typeof body.email === "string" ? body.email : undefined
+		const replyTo = replyToCandidate && EMAIL_REGEX.test(replyToCandidate) ? replyToCandidate : undefined
 
 		if (type === "contact") {
 			subject = subject || `[Contact] ${body.name || "New Message"}`
