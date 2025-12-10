@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic"
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const normalize = (value?: string) => (value || "").trim()
-const normalizeEmail = (value?: string) => normalize(value).replace(/\s+/g, "").toLowerCase()
+const normalizeEmail = (value?: string) => normalize(value).toLowerCase()
 
 export async function POST(request: NextRequest) {
 	try {
