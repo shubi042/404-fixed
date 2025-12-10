@@ -26,10 +26,12 @@ const initialFormState = {
   instructions: "",
 }
 
+const normalizeEmail = (value: string) => value.replace(/\s+/g, "").toLowerCase()
+
 const sanitizeBookingForm = (data: typeof initialFormState) => ({
   firstName: data.firstName.trim(),
   lastName: data.lastName.trim(),
-  email: data.email.trim().toLowerCase(),
+  email: normalizeEmail(data.email),
   phone: data.phone.trim(),
   address: data.address.trim(),
   date: data.date.trim(),

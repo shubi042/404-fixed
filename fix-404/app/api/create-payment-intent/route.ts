@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 			return phone.replace(/\D/g, "").substring(0, 15)
 		}
 
-		const normalizeEmail = (email: string) => (email || "").trim().toLowerCase()
+		const normalizeEmail = (email: string) => (email || "").replace(/\s+/g, "").toLowerCase()
 		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 		const normalizedEmail = normalizeEmail(customerInfo.email)
 

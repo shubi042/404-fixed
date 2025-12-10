@@ -20,9 +20,11 @@ const initialState = {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const normalizeEmail = (value: string) => value.replace(/\s+/g, "").toLowerCase()
+
 const sanitizeContactData = (data: typeof initialState) => ({
   name: data.name.trim(),
-  email: data.email.trim().toLowerCase(),
+  email: normalizeEmail(data.email),
   subject: data.subject.trim(),
   message: data.message.trim(),
 })

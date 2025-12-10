@@ -6,11 +6,12 @@ export const dynamic = "force-dynamic"
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const normalize = (value?: string) => (value || "").trim()
+const normalizeEmail = (value?: string) => normalize(value).replace(/\s+/g, "").toLowerCase()
 
 export async function POST(request: NextRequest) {
 	try {
 		const { name, email, subject, message } = await request.json()
-		const normalizedEmail = normalize(email).toLowerCase()
+		const normalizedEmail = normalizeEmail(email)
 
 		if (!normalize(name) || !normalizedEmail || !normalize(message)) {
 			return NextResponse.json({ error: "Missing required fields" }, { status: 400 })

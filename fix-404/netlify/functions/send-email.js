@@ -42,7 +42,7 @@ exports.handler = async function (event) {
 		})
 
 		const body = JSON.parse(event.body || "{}")
-		const sanitizeEmail = (email) => (typeof email === "string" ? email.trim().toLowerCase() : "")
+		const sanitizeEmail = (email) => (typeof email === "string" ? email.replace(/\s+/g, "").toLowerCase() : "")
 		const replyToCandidate = sanitizeEmail(body.email)
 		const type = body.type || "contact"
 
