@@ -20,7 +20,10 @@ const initialState = {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-const normalizeEmail = (value: string) => value.trim().toLowerCase()
+const normalizeEmail = (value: string) => {
+  if (!value) return ""
+  return value.replace(/[\u200B-\u200D\uFEFF]/g, "").trim().toLowerCase()
+}
 
 const sanitizeContactData = (data: typeof initialState) => ({
   name: data.name.trim(),

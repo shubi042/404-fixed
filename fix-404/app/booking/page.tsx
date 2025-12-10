@@ -26,7 +26,11 @@ const initialFormState = {
   instructions: "",
 }
 
-const normalizeEmail = (value: string) => value.trim().toLowerCase()
+const normalizeEmail = (value: string) => {
+  if (!value) return ""
+  // strip hidden zero-width characters while preserving @ and dots
+  return value.replace(/[\u200B-\u200D\uFEFF]/g, "").trim().toLowerCase()
+}
 
 const sanitizeBookingForm = (data: typeof initialFormState) => ({
   firstName: data.firstName.trim(),
