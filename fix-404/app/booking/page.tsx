@@ -13,20 +13,40 @@ import { loadStripe } from "@stripe/stripe-js"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const initialFormState = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  address: "",
+  date: "",
+  time: "",
+  instructions: "",
+}
+
+const normalizeEmail = (value: string) => {
+  if (!value) return ""
+  // strip hidden zero-width characters while preserving @ and dots
+  return value.replace(/[\u200B-\u200D\uFEFF]/g, "").trim().toLowerCase()
+}
+
+const sanitizeBookingForm = (data: typeof initialFormState) => ({
+  firstName: data.firstName.trim(),
+  lastName: data.lastName.trim(),
+  email: normalizeEmail(data.email),
+  phone: data.phone.trim(),
+  address: data.address.trim(),
+  date: data.date.trim(),
+  time: data.time.trim(),
+  instructions: data.instructions.trim(),
+})
 
 export default function BookingPage() {
   const [selectedService, setSelectedService] = useState("")
   const [selectedAddons, setSelectedAddons] = useState<string[]>([])
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    address: "",
-    date: "",
-    time: "",
-    instructions: "",
-  })
+  const [formData, setFormData] = useState(initialFormState)
   const [isProcessing, setIsProcessing] = useState(false)
   const [pricingMode, setPricingMode] = useState<"flat">("flat")
   const [agreedToTerms, setAgreedToTerms] = useState(false)
@@ -143,17 +163,24 @@ export default function BookingPage() {
   }
 
   const handlePayment = async () => {
+    const sanitizedForm = sanitizeBookingForm(formData)
+
     if (
       !selectedService ||
-      !formData.firstName ||
-      !formData.lastName ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.address ||
-      !formData.date ||
-      !formData.time
+      !sanitizedForm.firstName ||
+      !sanitizedForm.lastName ||
+      !sanitizedForm.email ||
+      !sanitizedForm.phone ||
+      !sanitizedForm.address ||
+      !sanitizedForm.date ||
+      !sanitizedForm.time
     ) {
       alert("Please fill in all required fields before proceeding to payment.")
+      return
+    }
+
+    if (!EMAIL_REGEX.test(sanitizedForm.email)) {
+      alert("Please enter a valid email address so we can send your confirmation.")
       return
     }
 
@@ -177,7 +204,7 @@ export default function BookingPage() {
           currency: "cad",
           service: chosenService,
           addons: selectedAddons.map((id) => addons.find((a) => a.id === id)).filter(Boolean),
-          customerInfo: formData,
+          customerInfo: sanitizedForm,
         }),
       })
 

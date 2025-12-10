@@ -11,22 +11,45 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+const initialState = {
+  name: "",
+  email: "",
+  subject: "",
+  message: "",
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const normalizeEmail = (value: string) => {
+  if (!value) return ""
+  return value.replace(/[\u200B-\u200D\uFEFF]/g, "").trim().toLowerCase()
+}
+
+const sanitizeContactData = (data: typeof initialState) => ({
+  name: data.name.trim(),
+  email: normalizeEmail(data.email),
+  subject: data.subject.trim(),
+  message: data.message.trim(),
+})
+
 export default function ContactPage() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-  })
+  const [formData, setFormData] = useState(initialState)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const normalizedData = sanitizeContactData(formData)
+
+    if (!EMAIL_REGEX.test(normalizedData.email)) {
+      alert("Please enter a valid email address.")
+      return
+    }
+
     try {
       // Try Netlify Function first
       const fnRes = await fetch("/.netlify/functions/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "contact", ...formData }),
+        body: JSON.stringify({ type: "contact", ...normalizedData }),
       })
 
       if (!fnRes.ok) {
@@ -34,7 +57,7 @@ export default function ContactPage() {
         const res = await fetch("/api/contact", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(normalizedData),
         })
         if (!res.ok) {
           const data = await res.json().catch(() => ({}))
@@ -43,7 +66,7 @@ export default function ContactPage() {
       }
 
       alert("Thanks! Your message has been sent successfully to services@tidymate.ca. We'll get back to you within 24 hours.")
-      setFormData({ name: "", email: "", subject: "", message: "" })
+      setFormData(initialState)
     } catch (err: any) {
       alert(err?.message || "Failed to send message")
     }
