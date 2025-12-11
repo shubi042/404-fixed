@@ -16,8 +16,34 @@ export async function POST(request: NextRequest) {
 		})
 
 		const { amount, currency, service, addons, customerInfo } = await request.json()
+		if (!customerInfo || typeof customerInfo !== "object") {
+			return NextResponse.json({ error: "Customer information is required" }, { status: 400 })
+		}
 
-		// Create Stripe Checkout Session
+		// Clean all strings to remove ANY characters that could cause validation issues
+		const cleanString = (str: string) => {
+			if (!str) return ""
+			return str.replace(/[^\w\s@.]/g, "").trim().substring(0, 100)
+		}
+
+		const cleanPhone = (phone: string) => {
+			if (!phone) return ""
+			return phone.replace(/\D/g, "").substring(0, 15)
+		}
+
+		const normalizeEmail = (email: string) =>
+			(email || "")
+				.replace(/[\u200B-\u200D\uFEFF]/g, "")
+				.trim()
+				.toLowerCase()
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+		const normalizedEmail = normalizeEmail(customerInfo.email)
+
+		if (!normalizedEmail || !emailRegex.test(normalizedEmail)) {
+			return NextResponse.json({ error: "Please enter a valid email address so we can send your receipt." }, { status: 400 })
+		}
+
+		// Create Stripe Checkout Session with absolutely clean data
 		const session = await stripe.checkout.sessions.create({
 			payment_method_types: ["card"],
 			line_items: [
@@ -25,10 +51,10 @@ export async function POST(request: NextRequest) {
 					price_data: {
 						currency: currency,
 						product_data: {
-							name: service.name,
-							description: `${service.cleaners} • Professional Equipment Included`,
+							name: cleanString(service.name),
+							description: "Professional cleaning service",
 						},
-						unit_amount: service.price * 100, // Convert to cents
+						unit_amount: service.price * 100,
 					},
 					quantity: 1,
 				},
@@ -36,7 +62,7 @@ export async function POST(request: NextRequest) {
 					price_data: {
 						currency: currency,
 						product_data: {
-							name: addon.name,
+							name: cleanString(addon.name),
 							description: "Add-on service",
 						},
 						unit_amount: addon.price * 100,
@@ -45,18 +71,14 @@ export async function POST(request: NextRequest) {
 				})),
 			],
 			mode: "payment",
-			success_url: `${request.headers.get("origin")}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `${request.headers.get("origin")}/booking`,
-			customer_email: customerInfo.email,
+			success_url: `https://tidymate.ca/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `https://tidymate.ca/booking`,
+			customer_email: normalizedEmail,
 			metadata: {
-				customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
-				phone: customerInfo.phone,
-				address: customerInfo.address,
-				date: customerInfo.date,
-				time: customerInfo.time,
-				instructions: customerInfo.instructions || "",
-				service: service.name,
-				addons: addons.map((a: any) => a.name).join(", "),
+				name: cleanString(`${customerInfo.firstName} ${customerInfo.lastName}`),
+				phone: cleanPhone(customerInfo.phone),
+				service: cleanString(service.name),
+				customerEmail: normalizedEmail,
 			},
 		})
 

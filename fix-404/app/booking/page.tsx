@@ -13,48 +13,69 @@ import { loadStripe } from "@stripe/stripe-js"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const initialFormState = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  address: "",
+  date: "",
+  time: "",
+  instructions: "",
+}
+
+const normalizeEmail = (value: string) => {
+  if (!value) return ""
+  // strip hidden zero-width characters while preserving @ and dots
+  return value.replace(/[\u200B-\u200D\uFEFF]/g, "").trim().toLowerCase()
+}
+
+const sanitizeBookingForm = (data: typeof initialFormState) => ({
+  firstName: data.firstName.trim(),
+  lastName: data.lastName.trim(),
+  email: normalizeEmail(data.email),
+  phone: data.phone.trim(),
+  address: data.address.trim(),
+  date: data.date.trim(),
+  time: data.time.trim(),
+  instructions: data.instructions.trim(),
+})
 
 export default function BookingPage() {
   const [selectedService, setSelectedService] = useState("")
   const [selectedAddons, setSelectedAddons] = useState<string[]>([])
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    address: "",
-    date: "",
-    time: "",
-    instructions: "",
-  })
+  const [formData, setFormData] = useState(initialFormState)
   const [isProcessing, setIsProcessing] = useState(false)
   const [pricingMode, setPricingMode] = useState<"flat">("flat")
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   const servicePricing = {
-    // Airbnb Cleaning Services
+    // Airbnb/Residential Cleaning Services
     "airbnb-1bed": {
-      name: "Airbnb 1 Bedroom",
+      name: "Airbnb/Residential 1 Bedroom",
       price: 110,
       cleaners: "1 Cleaner",
-      category: "Airbnb Cleaning",
+      category: "Airbnb/Residential Cleaning",
     },
     "airbnb-2bed": {
-      name: "Airbnb 2 Bedrooms",
+      name: "Airbnb/Residential 2 Bedrooms",
       price: 140,
       cleaners: "1 Cleaner",
-      category: "Airbnb Cleaning",
+      category: "Airbnb/Residential Cleaning",
     },
     "airbnb-3bed": {
-      name: "Airbnb 3 Bedrooms",
+      name: "Airbnb/Residential 3 Bedrooms",
       price: 200,
-      cleaners: "2 Cleaners",
-      category: "Airbnb Cleaning",
+      cleaners: "1 Cleaner",
+      category: "Airbnb/Residential Cleaning",
     },
     "airbnb-4bed": {
-      name: "Airbnb 4+ Bedrooms",
+      name: "Airbnb/Residential 4+ Bedrooms",
       price: 240,
       cleaners: "2 Cleaners",
-      category: "Airbnb Cleaning",
+      category: "Airbnb/Residential Cleaning",
     },
 
     // Post-Construction Residential
@@ -142,25 +163,36 @@ export default function BookingPage() {
   }
 
   const handlePayment = async () => {
+    const sanitizedForm = sanitizeBookingForm(formData)
+
     if (
       !selectedService ||
-      !formData.firstName ||
-      !formData.lastName ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.address ||
-      !formData.date ||
-      !formData.time
+      !sanitizedForm.firstName ||
+      !sanitizedForm.lastName ||
+      !sanitizedForm.email ||
+      !sanitizedForm.phone ||
+      !sanitizedForm.address ||
+      !sanitizedForm.date ||
+      !sanitizedForm.time
     ) {
       alert("Please fill in all required fields before proceeding to payment.")
+      return
+    }
+
+    if (!EMAIL_REGEX.test(sanitizedForm.email)) {
+      alert("Please enter a valid email address so we can send your confirmation.")
+      return
+    }
+
+    if (!agreedToTerms) {
+      alert("Please agree to the refund and cancellation policy before proceeding.")
       return
     }
 
     setIsProcessing(true)
 
     try {
-      const chosenService =
-        servicePricing[selectedService as keyof typeof servicePricing]
+      const chosenService = servicePricing[selectedService as keyof typeof servicePricing]
 
       const response = await fetch("/api/create-payment-intent", {
         method: "POST",
@@ -172,7 +204,7 @@ export default function BookingPage() {
           currency: "cad",
           service: chosenService,
           addons: selectedAddons.map((id) => addons.find((a) => a.id === id)).filter(Boolean),
-          customerInfo: formData,
+          customerInfo: sanitizedForm,
         }),
       })
 
@@ -242,57 +274,56 @@ export default function BookingPage() {
                     </div>
                   </RadioGroup>
 
-                                      <>
-                      <Label htmlFor="service" className="text-base font-semibold mb-4 block">
-                        Select Your Service
-                      </Label>
-                      <Select value={selectedService} onValueChange={setSelectedService}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose your cleaning service" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(serviceCategories).map(([category, services]) => (
-                            <div key={category}>
-                              <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50">
-                                {category}
-                              </div>
-                              {services.map((service) => (
-                                <SelectItem key={service.key} value={service.key}>
-                                  <div className="flex justify-between items-center w-full">
-                                    <span>{service.name}</span>
-                                    <div className="text-right ml-4">
-                                      <div className="font-semibold">${service.price} CAD</div>
-                                      <div className="text-xs text-muted-foreground">{service.cleaners}</div>
-                                    </div>
+                  <>
+                    <Label htmlFor="service" className="text-base font-semibold mb-4 block">
+                      Select Your Service
+                    </Label>
+                    <Select value={selectedService} onValueChange={setSelectedService}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose your cleaning service" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(serviceCategories).map(([category, services]) => (
+                          <div key={category}>
+                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50">
+                              {category}
+                            </div>
+                            {services.map((service) => (
+                              <SelectItem key={service.key} value={service.key}>
+                                <div className="flex justify-between items-center w-full">
+                                  <span>{service.name}</span>
+                                  <div className="text-right ml-4">
+                                    <div className="font-semibold">${service.price} CAD</div>
+                                    <div className="text-xs text-muted-foreground">{service.cleaners}</div>
                                   </div>
-                                </SelectItem>
-                              ))}
-                            </div>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {selectedService && (
-                        <div className="mt-2 p-3 bg-muted/50 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="font-medium">
-                                {servicePricing[selectedService as keyof typeof servicePricing]?.name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {servicePricing[selectedService as keyof typeof servicePricing]?.cleaners} • Professional
-                                Equipment Included
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold">
-                                ${servicePricing[selectedService as keyof typeof servicePricing]?.price} CAD
-                              </p>
-                              <p className="text-xs text-muted-foreground">Flat Rate</p>
-                            </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedService && (
+                      <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">
+                              {servicePricing[selectedService as keyof typeof servicePricing]?.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {servicePricing[selectedService as keyof typeof servicePricing]?.cleaners} - Professional Equipment Included
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold">
+                              ${servicePricing[selectedService as keyof typeof servicePricing]?.price} CAD
+                            </p>
+                            <p className="text-xs text-muted-foreground">Flat Rate</p>
                           </div>
                         </div>
-                      )}
-                    </>
+                      </div>
+                    )}
+                  </>
                 </div>
 
                 {/* Add-on Services */}
@@ -473,28 +504,54 @@ export default function BookingPage() {
                           <span>${calculateTotal()} CAD</span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-2">
-                          All taxes included • Professional equipment provided
+                          All taxes included - Professional equipment provided
                         </p>
                       </div>
 
-                      {/* Payment Terms Disclaimer */}
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4 mb-6">
-                        <h4 className="font-semibold text-amber-800 mb-2">⚠️ Payment Terms & Cancellation Policy</h4>
-                        <ul className="text-sm text-amber-700 space-y-1">
-                          <li>• <strong>All payments are non-refundable</strong></li>
-                          <li>• <strong>Cancellations within 24 hours</strong> of service will result in forfeiture of payment</li>
-                          <li>• <strong>Services can only be rescheduled</strong> after payment (no refunds)</li>
-                          <li>• By proceeding with payment, you agree to these terms</li>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <h4 className="font-semibold text-sm text-blue-800 mb-2">Payment & Cancellation Policy</h4>
+                        <ul className="text-xs text-blue-700 space-y-1">
+                          <li>• Secure payment processing through Stripe</li>
+                          <li>• All major credit cards accepted</li>
+                          <li>• Payment is processed immediately upon booking</li>
+                          <li>• You'll receive email confirmation after payment</li>
                         </ul>
+                        
+                        <div className="mt-3 pt-3 border-t border-blue-300">
+                          <h5 className="font-semibold text-xs text-blue-800 mb-2">REFUND & CANCELLATION POLICY:</h5>
+                          <ul className="text-xs text-blue-700 space-y-1">
+                            <li>• <strong>No refunds</strong> are provided after booking confirmation</li>
+                            <li>• <strong>Cancellations within 24 hours</strong> of scheduled service result in <strong>forfeiture of full payment</strong></li>
+                            <li>• <strong>Cancellations 24+ hours in advance</strong> may be <strong>rescheduled to a new date</strong> (no refund)</li>
+                            <li>• Emergency cancellations will be reviewed on a case-by-case basis</li>
+                            <li>• Contact us immediately at services@tidymate.ca for any changes</li>
+                          </ul>
+                        </div>
                       </div>
 
-                      <Button className="w-full mt-6" size="lg" onClick={handlePayment} disabled={isProcessing}>
-                        {isProcessing ? "Processing..." : "I Agree - Book & Pay Now"}
+                      <div className="flex items-start space-x-3 p-3 border rounded-lg mb-4">
+                        <Checkbox
+                          id="terms-agreement"
+                          checked={agreedToTerms}
+                          onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                          className="mt-1"
+                        />
+                        <Label htmlFor="terms-agreement" className="text-sm cursor-pointer leading-relaxed">
+                          I understand and agree to the <strong>refund and cancellation policy</strong> stated above. 
+                          I acknowledge that <strong>no refunds will be provided</strong> after booking confirmation, 
+                          and cancellations within 24 hours of service will result in forfeiture of payment.
+                        </Label>
+                      </div>
+
+                      <Button className="w-full mt-6" size="lg" onClick={handlePayment} disabled={isProcessing || !agreedToTerms}>
+                        {isProcessing ? "Processing..." : "Book & Pay Now"}
                       </Button>
 
                       <div className="text-center mt-2">
                         <p className="text-xs text-muted-foreground">🔒 Secure payment powered by Stripe</p>
-                        <p className="text-xs text-muted-foreground mt-1">By clicking above, you agree to our payment terms</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          By proceeding, you agree to our terms of service and payment policy
+                        </p>
                       </div>
                     </>
                   )}
