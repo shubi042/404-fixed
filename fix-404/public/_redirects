@@ -1,3 +1,1 @@
-/api/*  /.netlify/functions/___netlify-handler  200
-/_next/static/*  /_next/static/:splat  200
-/*      /index.html   200
+# Routing is handled by @netlify/plugin-nextjs
