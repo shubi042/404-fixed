@@ -11,48 +11,26 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: "Stripe secret key not configured" }, { status: 500 })
 		}
 
-		const stripe = new Stripe(stripeSecretKey, {
-			apiVersion: "2024-06-20",
-		})
-
+		const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" })
 		const { amount, currency, service, addons, customerInfo } = await request.json()
-		if (!customerInfo || typeof customerInfo !== "object") {
-			return NextResponse.json({ error: "Customer information is required" }, { status: 400 })
-		}
 
-		// Clean all strings to remove ANY characters that could cause validation issues
-		const cleanString = (str: string) => {
-			if (!str) return ""
-			return str.replace(/[^\w\s@.]/g, "").trim().substring(0, 100)
-		}
+		const clean = (str: string, max = 500) =>
+			(str ?? "").replace(/[<>"]/g, "").trim().substring(0, max)
 
-		const cleanPhone = (phone: string) => {
-			if (!phone) return ""
-			return phone.replace(/\D/g, "").substring(0, 15)
-		}
+		const cleanPhone = (phone: string) =>
+			(phone ?? "").replace(/\D/g, "").substring(0, 15)
 
-		const normalizeEmail = (email: string) =>
-			(email || "")
-				.replace(/[\u200B-\u200D\uFEFF]/g, "")
-				.trim()
-				.toLowerCase()
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-		const normalizedEmail = normalizeEmail(customerInfo.email)
+		const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://tidymate.ca"
 
-		if (!normalizedEmail || !emailRegex.test(normalizedEmail)) {
-			return NextResponse.json({ error: "Please enter a valid email address so we can send your receipt." }, { status: 400 })
-		}
-
-		// Create Stripe Checkout Session with absolutely clean data
 		const session = await stripe.checkout.sessions.create({
 			payment_method_types: ["card"],
 			line_items: [
 				{
 					price_data: {
-						currency: currency,
+						currency,
 						product_data: {
-							name: cleanString(service.name),
-							description: "Professional cleaning service",
+							name: clean(service.name),
+							description: "Professional cleaning service by TidyMate",
 						},
 						unit_amount: service.price * 100,
 					},
@@ -60,9 +38,9 @@ export async function POST(request: NextRequest) {
 				},
 				...addons.map((addon: any) => ({
 					price_data: {
-						currency: currency,
+						currency,
 						product_data: {
-							name: cleanString(addon.name),
+							name: clean(addon.name),
 							description: "Add-on service",
 						},
 						unit_amount: addon.price * 100,
@@ -71,20 +49,25 @@ export async function POST(request: NextRequest) {
 				})),
 			],
 			mode: "payment",
-			success_url: `https://tidymate.ca/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-			cancel_url: `https://tidymate.ca/booking`,
-			customer_email: normalizedEmail,
+			success_url: `${baseUrl}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+			cancel_url: `${baseUrl}/booking`,
+			customer_email: customerInfo.email,
 			metadata: {
-				name: cleanString(`${customerInfo.firstName} ${customerInfo.lastName}`),
+				customerName: clean(`${customerInfo.firstName} ${customerInfo.lastName}`),
+				customerEmail: clean(customerInfo.email),
 				phone: cleanPhone(customerInfo.phone),
-				service: cleanString(service.name),
-				customerEmail: normalizedEmail,
+				address: clean(customerInfo.address),
+				date: clean(customerInfo.date),
+				time: clean(customerInfo.time),
+				instructions: clean(customerInfo.instructions),
+				service: clean(service.name),
+				addons: addons.map((a: any) => clean(a.name)).join(", "),
 			},
 		})
 
 		return NextResponse.json({ sessionId: session.id })
 	} catch (error: any) {
-		console.error("Error creating payment intent:", error)
-		return NextResponse.json({ error: error?.message || "Failed to create payment intent" }, { status: 500 })
+		console.error("Error creating checkout session:", error)
+		return NextResponse.json({ error: error?.message || "Failed to create checkout session" }, { status: 500 })
 	}
 }
