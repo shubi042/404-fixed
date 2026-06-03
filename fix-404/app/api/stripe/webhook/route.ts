@@ -1,13 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server"
 import Stripe from "stripe"
 import { sendOwnerBookingEmail, sendCustomerBookingEmail, sendContractorBookingEmail } from "@/lib/email"
+import { addBookingToSheets } from "@/lib/google-sheets"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 async function sendOwnerViaFunction(payload: any) {
 	try {
-		const baseUrl = process.env.PUBLIC_BASE_URL
+		const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
 		if (!baseUrl) return
 		await fetch(`${baseUrl}/.netlify/functions/send-email`, {
 			method: "POST",
@@ -47,79 +48,69 @@ export async function POST(request: NextRequest) {
 		const session = event.data.object as Stripe.Checkout.Session
 		try {
 			const sessionWithLineItems = await stripe.checkout.sessions.retrieve(session.id, {
-				expand: ["line_items", "customer"],
+				expand: ["line_items"],
 			})
 
 			const metadata = sessionWithLineItems.metadata || {}
-			const addons = (metadata.addons ? String(metadata.addons) : "")
-				.split(",")
-				.map((s) => s.trim())
-				.filter(Boolean)
 
+			// All metadata fields are now set by create-payment-intent
 			const ownerPayload = {
 				customerName: String(metadata.customerName || "Unknown"),
-				customerEmail: String(sessionWithLineItems.customer_email || metadata.customerEmail || "unknown@example.com"),
+				customerEmail: String(metadata.customerEmail || sessionWithLineItems.customer_email || "unknown@example.com"),
 				phone: String(metadata.phone || ""),
 				address: String(metadata.address || ""),
 				date: String(metadata.date || ""),
 				time: String(metadata.time || ""),
+				instructions: String(metadata.instructions || ""),
 				serviceName: String(metadata.service || sessionWithLineItems?.line_items?.data?.[0]?.description || "Cleaning Service"),
-				addons,
+				addons: (metadata.addons || "").split(",").map((s) => s.trim()).filter(Boolean),
 				totalAmountCents: typeof sessionWithLineItems.amount_total === "number" ? sessionWithLineItems.amount_total : undefined,
 				currency: sessionWithLineItems.currency || undefined,
 				sessionId: sessionWithLineItems.id,
 			}
 
-			// Your actual contractors - replace with real email addresses
-			// TODO: Update these with your actual contractor emails from the subcontractors sheet
+			// Contractor list — update these with real contractor emails
 			const contractors = [
-				{ name: "Contractor 1", email: "services@tidymate.ca", phone: "(416) 555-0001", specialties: ["airbnb", "residential"] },
-				{ name: "Contractor 2", email: "services@tidymate.ca", phone: "(416) 555-0002", specialties: ["post-construction", "commercial"] },
-				{ name: "Contractor 3", email: "services@tidymate.ca", phone: "(416) 555-0003", specialties: ["airbnb", "residential"] },
-				{ name: "Contractor 4", email: "services@tidymate.ca", phone: "(416) 555-0004", specialties: ["post-construction"] }
+				{ name: "Contractor 1", email: process.env.CONTRACTOR_1_EMAIL || "services@tidymate.ca", phone: "(416) 555-0001", specialties: ["airbnb", "residential"] },
+				{ name: "Contractor 2", email: process.env.CONTRACTOR_2_EMAIL || "services@tidymate.ca", phone: "(416) 555-0002", specialties: ["post-construction", "commercial"] },
+				{ name: "Contractor 3", email: process.env.CONTRACTOR_3_EMAIL || "services@tidymate.ca", phone: "(416) 555-0003", specialties: ["airbnb", "residential"] },
+				{ name: "Contractor 4", email: process.env.CONTRACTOR_4_EMAIL || "services@tidymate.ca", phone: "(416) 555-0004", specialties: ["post-construction"] },
 			]
 
-			// Simple assignment logic
-			let assignedContractor = contractors[0] // Default to first contractor
-			if (ownerPayload.serviceName.toLowerCase().includes("post-construction")) {
-				assignedContractor = contractors.find(c => c.specialties.includes("post-construction")) || contractors[1]
-			} else {
-				// Airbnb/Residential services
-				assignedContractor = contractors.find(c => c.specialties.includes("airbnb") || c.specialties.includes("residential")) || contractors[0]
-			}
-
-			console.log(`✅ Contractor assigned: ${assignedContractor.name} (${assignedContractor.email})`)
+			const isPostConstruction = ownerPayload.serviceName.toLowerCase().includes("post-construction")
+			const assignedContractor = isPostConstruction
+				? contractors.find((c) => c.specialties.includes("post-construction")) ?? contractors[1]
+				: contractors.find((c) => c.specialties.includes("airbnb") || c.specialties.includes("residential")) ?? contractors[0]
 
 			const contractorAssignment = {
 				contractorName: assignedContractor.name,
 				contractorEmail: assignedContractor.email,
 				contractorPhone: assignedContractor.phone,
-				estimatedDuration: 3
+				estimatedDuration: isPostConstruction ? "4-6 hours" : "2-3 hours",
 			}
 
-			// Send emails to all parties
-			await sendOwnerBookingEmail(ownerPayload, contractorAssignment)
-			
-			if (ownerPayload.customerEmail && ownerPayload.customerEmail !== "unknown@example.com") {
-				await sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
-			}
+			// Send confirmation emails to all parties in parallel
+			await Promise.allSettled([
+				sendOwnerBookingEmail(ownerPayload, contractorAssignment),
+				ownerPayload.customerEmail !== "unknown@example.com"
+					? sendCustomerBookingEmail(ownerPayload, ownerPayload.customerEmail)
+					: Promise.resolve(),
+				sendContractorBookingEmail(assignedContractor.email, assignedContractor.name, {
+					service: ownerPayload.serviceName,
+					addons: ownerPayload.addons.join(", "),
+					estimatedDuration: contractorAssignment.estimatedDuration,
+					date: ownerPayload.date,
+					time: ownerPayload.time,
+					address: ownerPayload.address,
+					instructions: ownerPayload.instructions,
+					customerName: ownerPayload.customerName,
+					phone: ownerPayload.phone,
+					customerEmail: ownerPayload.customerEmail,
+				}),
+			])
 
-			// Send email to assigned contractor (REAL contractor from your sheet)
-			await sendContractorBookingEmail(assignedContractor.email, assignedContractor.name, {
-				service: ownerPayload.serviceName,
-				addons: ownerPayload.addons.join(", "),
-				estimatedDuration: "3 hours",
-				date: ownerPayload.date,
-				time: ownerPayload.time,
-				address: ownerPayload.address,
-				instructions: metadata.instructions || "",
-				customerName: ownerPayload.customerName,
-				phone: ownerPayload.phone,
-				customerEmail: ownerPayload.customerEmail
-			})
-
-			// Add booking to Google Sheets
-			await addBookingToSheet({
+			// Log booking to Google Sheets (non-blocking)
+			addBookingToSheets({
 				timestamp: new Date().toISOString(),
 				customerName: ownerPayload.customerName,
 				customerEmail: ownerPayload.customerEmail,
@@ -127,23 +118,24 @@ export async function POST(request: NextRequest) {
 				address: ownerPayload.address,
 				service: ownerPayload.serviceName,
 				addons: ownerPayload.addons.join(", "),
-				totalAmount: ownerPayload.totalAmountCents ? `$${(ownerPayload.totalAmountCents / 100).toFixed(2)} ${ownerPayload.currency?.toUpperCase() || 'CAD'}` : 'Unknown',
+				totalAmount: ownerPayload.totalAmountCents
+					? `$${(ownerPayload.totalAmountCents / 100).toFixed(2)} ${ownerPayload.currency?.toUpperCase() || "CAD"}`
+					: "Unknown",
 				date: ownerPayload.date,
 				time: ownerPayload.time,
-				instructions: metadata.instructions || "",
+				instructions: ownerPayload.instructions,
 				sessionId: ownerPayload.sessionId || "",
 				paymentStatus: "Completed",
 				contractorName: assignedContractor.name,
 				contractorEmail: assignedContractor.email,
 				contractorPhone: assignedContractor.phone,
-				estimatedDuration: "3 hours"
-			})
+				estimatedDuration: contractorAssignment.estimatedDuration,
+			}).catch((err) => console.error("Google Sheets logging failed:", err))
 
 			sendOwnerViaFunction(ownerPayload)
 
-			console.log("✅ Booking processed and emails sent to all parties")
-			console.log(`✅ REAL contractor assigned from your sheet: ${assignedContractor.name} (${assignedContractor.email})`)
-
+			console.log(`✅ Booking processed: ${ownerPayload.serviceName} for ${ownerPayload.customerName}`)
+			console.log(`✅ Assigned to: ${assignedContractor.name} (${assignedContractor.email})`)
 		} catch (err) {
 			console.error("Error handling checkout.session.completed:", err)
 		}
