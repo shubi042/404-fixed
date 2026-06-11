@@ -65,7 +65,8 @@ export async function POST(request: NextRequest) {
 			},
 		})
 
-		return NextResponse.json({ sessionId: session.id })
+		// Return both sessionId and url — client uses url for direct redirect
+		return NextResponse.json({ sessionId: session.id, url: session.url })
 	} catch (error: any) {
 		console.error("Error creating checkout session:", error)
 		return NextResponse.json({ error: error?.message || "Failed to create checkout session" }, { status: 500 })
