@@ -15,7 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 export default function BookingPage() {
-  const [selectedService, setSelectedService] = useState("")
+  const [selectedService, setSelectedService] = useState("airbnb-1bed")
   const [selectedAddons, setSelectedAddons] = useState<string[]>([])
   const [formData, setFormData] = useState({
     firstName: "",
@@ -186,10 +186,10 @@ export default function BookingPage() {
         throw new Error(data?.error || "Failed to start checkout")
       }
 
-      const stripe = await stripePromise
-      if (!stripe) throw new Error("Stripe failed to load")
+      const stripeClient = await stripePromise
+      if (!stripeClient) throw new Error("Stripe failed to load")
 
-      const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId })
+      const { error } = await (stripeClient as any).redirectToCheckout({ sessionId: data.sessionId })
       if (error) {
         throw error
       }
